@@ -1,169 +1,205 @@
 @extends('layouts.admin')
+
+@section('styles')
+<style>
+    .form-section {
+        background: #ffffff;
+        padding: 25px;
+        border-radius: 12px;
+        box-shadow: 0px 0px 12px rgba(0,0,0,0.08);
+        margin-bottom: 25px;
+    }
+    .form-title {
+        font-weight: bold;
+        font-size: 20px;
+        margin-bottom: 15px;
+        color: #2b4b8b;
+    }
+</style>
+@endsection
+
 @section('content')
 
-<div class="card">
-    <div class="card-header">
-        {{ trans('global.create') }} {{ trans('cruds.addDoctor.title_singular') }}
+<div class="card shadow-lg">
+    <div class="card-header bg-primary text-white">
+        <strong>Create New Doctor</strong>
     </div>
 
     <div class="card-body">
-        <form method="POST" action="{{ route("admin.add-doctors.store") }}" enctype="multipart/form-data">
+        <form method="POST" action="{{ route('admin.add-doctors.store') }}" enctype="multipart/form-data">
             @csrf
-            <div class="form-group">
-                <label for="select_department_id">{{ trans('cruds.addDoctor.fields.select_department') }}</label>
-                <select class="form-control select2 {{ $errors->has('select_department') ? 'is-invalid' : '' }}" name="select_department_id" id="select_department_id">
-                    @foreach($select_departments as $id => $entry)
-                        <option value="{{ $id }}" {{ old('select_department_id') == $id ? 'selected' : '' }}>{{ $entry }}</option>
+
+            {{-- Section: Login Credentials --}}
+            <div class="form-section">
+                <div class="form-title">Doctor Login Details</div>
+
+                <div class="row">
+                    <div class="col-md-4 form-group">
+                        <label class="required">Doctor Login Name</label>
+                        <input type="text" name="login_name" class="form-control" required>
+                    </div>
+
+                    <div class="col-md-4 form-group">
+                        <label class="required">Doctor Email (Login ID)</label>
+                        <input type="email" name="login_email" class="form-control" required>
+                    </div>
+
+                    <div class="col-md-4 form-group">
+                        <label class="required">Doctor Password</label>
+                        <input type="password" name="login_password" class="form-control" required>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Section: Basic Doctor Info --}}
+            <div class="form-section">
+                <div class="form-title">Basic Information</div>
+
+                <div class="row">
+                    <div class="col-md-4 form-group">
+                        <label class="required">Department</label>
+                        <select class="form-control select2" name="select_department_id" required>
+                            @foreach($select_departments as $id => $entry)
+                                <option value="{{ $id }}">{{ $entry }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="col-md-4 form-group">
+                        <label class="required">Doctor Name</label>
+                        <input type="text" name="doctor_name" class="form-control" required>
+                    </div>
+
+                    <div class="col-md-4 form-group">
+                        <label>Doctor Fee</label>
+                        <input type="number" name="doctor_fee" class="form-control" step="0.01">
+                    </div>
+                </div>
+
+
+                <div class="row">
+                    <div class="col-md-4 form-group">
+                        <label>Appointment Slot Duration (Minutes)</label>
+                        <input type="number" name="appointment_slot_duration" class="form-control">
+                    </div>
+
+                    <div class="col-md-4 form-group">
+                        <label>Max Patients / Day</label>
+                        <input type="number" name="max_patients_per_day" class="form-control">
+                    </div>
+
+                    <div class="col-md-4 form-group">
+                        <label>Qualification</label>
+                        <input type="text" name="qualifications" class="form-control">
+                    </div>
+                </div>
+
+
+                <div class="row">
+                    <div class="col-md-4 form-group">
+                        <label>Experience (Years)</label>
+                        <input type="number" name="experience" class="form-control">
+                    </div>
+
+                    <div class="col-md-4 form-group">
+                        <label>Phone Number</label>
+                        <input type="text" name="phone" class="form-control">
+                    </div>
+
+                    <div class="col-md-4 form-group">
+                        <label>Alternate Phone</label>
+                        <input type="text" name="phone_alt" class="form-control">
+                    </div>
+                </div>
+
+            </div>
+
+
+            {{-- Section: Available Days --}}
+            <div class="form-section">
+                <div class="form-title">Available Days</div>
+
+                <div class="row">
+                    @foreach(App\Models\AddDoctor::AVAILABLE_DAYS_RADIO as $key => $label)
+                        <div class="col-md-3">
+                            <div class="form-check mb-2">
+                                <input type="checkbox" name="available_days[]" value="{{ $key }}" class="form-check-input" id="day_{{ $key }}">
+                                <label class="form-check-label" for="day_{{ $key }}">{{ $label }}</label>
+                            </div>
+                        </div>
                     @endforeach
-                </select>
-                @if($errors->has('select_department'))
-                    <div class="invalid-feedback">
-                        {{ $errors->first('select_department') }}
-                    </div>
-                @endif
-                <span class="help-block">{{ trans('cruds.addDoctor.fields.select_department_helper') }}</span>
+                </div>
             </div>
-            <div class="form-group">
-                <label class="required" for="doctor_name">{{ trans('cruds.addDoctor.fields.doctor_name') }}</label>
-                <input class="form-control {{ $errors->has('doctor_name') ? 'is-invalid' : '' }}" type="text" name="doctor_name" id="doctor_name" value="{{ old('doctor_name', '') }}" required>
-                @if($errors->has('doctor_name'))
-                    <div class="invalid-feedback">
-                        {{ $errors->first('doctor_name') }}
-                    </div>
-                @endif
-                <span class="help-block">{{ trans('cruds.addDoctor.fields.doctor_name_helper') }}</span>
+
+
+            {{-- Section: Description --}}
+            <div class="form-section">
+                <div class="form-title">Doctor Description</div>
+
+                <div class="form-group">
+                    <textarea class="form-control ckeditor" name="description" rows="5"></textarea>
+                </div>
             </div>
-            <div class="form-group">
-                <label>{{ trans('cruds.addDoctor.fields.available_days') }}</label>
-                @foreach(App\Models\AddDoctor::AVAILABLE_DAYS_RADIO as $key => $label)
-                    <div class="form-check {{ $errors->has('available_days') ? 'is-invalid' : '' }}">
-                        <input class="form-check-input" type="radio" id="available_days_{{ $key }}" name="available_days" value="{{ $key }}" {{ old('available_days', '') === (string) $key ? 'checked' : '' }}>
-                        <label class="form-check-label" for="available_days_{{ $key }}">{{ $label }}</label>
-                    </div>
-                @endforeach
-                @if($errors->has('available_days'))
-                    <div class="invalid-feedback">
-                        {{ $errors->first('available_days') }}
-                    </div>
-                @endif
-                <span class="help-block">{{ trans('cruds.addDoctor.fields.available_days_helper') }}</span>
-            </div>
-            <div class="form-group">
-                <label for="appointment_slot_duration">{{ trans('cruds.addDoctor.fields.appointment_slot_duration') }}</label>
-                <input class="form-control {{ $errors->has('appointment_slot_duration') ? 'is-invalid' : '' }}" type="text" name="appointment_slot_duration" id="appointment_slot_duration" value="{{ old('appointment_slot_duration', '') }}">
-                @if($errors->has('appointment_slot_duration'))
-                    <div class="invalid-feedback">
-                        {{ $errors->first('appointment_slot_duration') }}
-                    </div>
-                @endif
-                <span class="help-block">{{ trans('cruds.addDoctor.fields.appointment_slot_duration_helper') }}</span>
-            </div>
-            <div class="form-group">
-                <label for="max_patients_per_day">{{ trans('cruds.addDoctor.fields.max_patients_per_day') }}</label>
-                <input class="form-control {{ $errors->has('max_patients_per_day') ? 'is-invalid' : '' }}" type="text" name="max_patients_per_day" id="max_patients_per_day" value="{{ old('max_patients_per_day', '') }}">
-                @if($errors->has('max_patients_per_day'))
-                    <div class="invalid-feedback">
-                        {{ $errors->first('max_patients_per_day') }}
-                    </div>
-                @endif
-                <span class="help-block">{{ trans('cruds.addDoctor.fields.max_patients_per_day_helper') }}</span>
-            </div>
-            <div class="form-group">
-                <label for="doctor_fee">{{ trans('cruds.addDoctor.fields.doctor_fee') }}</label>
-                <input class="form-control {{ $errors->has('doctor_fee') ? 'is-invalid' : '' }}" type="number" name="doctor_fee" id="doctor_fee" value="{{ old('doctor_fee', '') }}" step="0.01">
-                @if($errors->has('doctor_fee'))
-                    <div class="invalid-feedback">
-                        {{ $errors->first('doctor_fee') }}
-                    </div>
-                @endif
-                <span class="help-block">{{ trans('cruds.addDoctor.fields.doctor_fee_helper') }}</span>
-            </div>
-            <div class="form-group">
-                <label for="description">{{ trans('cruds.addDoctor.fields.description') }}</label>
-                <textarea class="form-control ckeditor {{ $errors->has('description') ? 'is-invalid' : '' }}" name="description" id="description">{!! old('description') !!}</textarea>
-                @if($errors->has('description'))
-                    <div class="invalid-feedback">
-                        {{ $errors->first('description') }}
-                    </div>
-                @endif
-                <span class="help-block">{{ trans('cruds.addDoctor.fields.description_helper') }}</span>
-            </div>
-            <div class="form-group">
-                <button class="btn btn-danger" type="submit">
-                    {{ trans('global.save') }}
-                </button>
-            </div>
+
+
+            <button class="btn btn-success btn-lg" type="submit">
+                Save Doctor
+            </button>
+
         </form>
     </div>
 </div>
 
-
-
 @endsection
+
 
 @section('scripts')
 <script>
-    $(document).ready(function () {
-  function SimpleUploadAdapter(editor) {
-    editor.plugins.get('FileRepository').createUploadAdapter = function(loader) {
-      return {
-        upload: function() {
-          return loader.file
-            .then(function (file) {
-              return new Promise(function(resolve, reject) {
-                // Init request
-                var xhr = new XMLHttpRequest();
-                xhr.open('POST', '{{ route('admin.add-doctors.storeCKEditorImages') }}', true);
-                xhr.setRequestHeader('x-csrf-token', window._token);
-                xhr.setRequestHeader('Accept', 'application/json');
-                xhr.responseType = 'json';
+$(document).ready(function () {
+    function SimpleUploadAdapter(editor) {
+        editor.plugins.get('FileRepository').createUploadAdapter = function(loader) {
+            return {
+                upload: function() {
+                    return loader.file.then(function (file) {
+                        return new Promise(function(resolve, reject) {
+                            var xhr = new XMLHttpRequest();
+                            xhr.open('POST', '{{ route('admin.add-doctors.storeCKEditorImages') }}', true);
+                            xhr.setRequestHeader('x-csrf-token', window._token);
+                            xhr.setRequestHeader('Accept', 'application/json');
+                            xhr.responseType = 'json';
 
-                // Init listeners
-                var genericErrorText = `Couldn't upload file: ${ file.name }.`;
-                xhr.addEventListener('error', function() { reject(genericErrorText) });
-                xhr.addEventListener('abort', function() { reject() });
-                xhr.addEventListener('load', function() {
-                  var response = xhr.response;
+                            var genericErrorText = `Couldn't upload file: ${ file.name }.`;
 
-                  if (!response || xhr.status !== 201) {
-                    return reject(response && response.message ? `${genericErrorText}\n${xhr.status} ${response.message}` : `${genericErrorText}\n ${xhr.status} ${xhr.statusText}`);
-                  }
+                            xhr.addEventListener('error', function() { reject(genericErrorText) });
+                            xhr.addEventListener('abort', function() { reject() });
+                            xhr.addEventListener('load', function() {
+                                var response = xhr.response;
 
-                  $('form').append('<input type="hidden" name="ck-media[]" value="' + response.id + '">');
+                                if (!response || xhr.status !== 201) {
+                                    return reject(response && response.message ?
+                                        `${genericErrorText}\n${xhr.status} ${response.message}` :
+                                        `${genericErrorText}\n ${xhr.status} ${xhr.statusText}`);
+                                }
 
-                  resolve({ default: response.url });
-                });
+                                $('form').append('<input type="hidden" name="ck-media[]" value="' + response.id + '">');
+                                resolve({ default: response.url });
+                            });
 
-                if (xhr.upload) {
-                  xhr.upload.addEventListener('progress', function(e) {
-                    if (e.lengthComputable) {
-                      loader.uploadTotal = e.total;
-                      loader.uploaded = e.loaded;
-                    }
-                  });
+                            var data = new FormData();
+                            data.append('upload', file);
+                            data.append('crud_id', 0);
+                            xhr.send(data);
+                        });
+                    })
                 }
-
-                // Send request
-                var data = new FormData();
-                data.append('upload', file);
-                data.append('crud_id', '{{ $addDoctor->id ?? 0 }}');
-                xhr.send(data);
-              });
-            })
+            };
         }
-      };
     }
-  }
 
-  var allEditors = document.querySelectorAll('.ckeditor');
-  for (var i = 0; i < allEditors.length; ++i) {
-    ClassicEditor.create(
-      allEditors[i], {
-        extraPlugins: [SimpleUploadAdapter]
-      }
-    );
-  }
+    var editors = document.querySelectorAll('.ckeditor');
+    editors.forEach(function(editorElement) {
+        ClassicEditor.create(editorElement, { extraPlugins: [SimpleUploadAdapter] });
+    });
 });
 </script>
-
 @endsection

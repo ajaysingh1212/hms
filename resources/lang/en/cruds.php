@@ -201,7 +201,7 @@ return [
             'department_helper'       => ' ',
             'doctor'                  => 'Doctor',
             'doctor_helper'           => ' ',
-            'available_slots'         => 'Available Slots',
+            'available_slots'         => 'Booking Slots',
             'available_slots_helper'  => ' ',
             'patient_name'            => 'Patient Name',
             'patient_name_helper'     => ' ',

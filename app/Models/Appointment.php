@@ -25,6 +25,10 @@ class Appointment extends Model implements HasMedia
         'updated_at',
         'deleted_at',
     ];
+    protected $casts = [
+    'available_days' => 'array',
+    'doctor_slots' => 'array',
+    ];
 
     public const APPOINTMENT_TYPE_SELECT = [
         'new'       => 'New',
@@ -54,6 +58,8 @@ class Appointment extends Model implements HasMedia
         'updated_at',
         'deleted_at',
         'created_by_id',
+        'available_days',
+        'doctor_slots',
     ];
 
     protected function serializeDate(DateTimeInterface $date)

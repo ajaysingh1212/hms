@@ -46,6 +46,10 @@ class AddDoctor extends Model implements HasMedia
         'updated_at',
         'deleted_at',
         'created_by_id',
+        'phone',
+        'phone_alt',
+        'experience',
+        'qualifications',
     ];
 
     protected function serializeDate(DateTimeInterface $date)

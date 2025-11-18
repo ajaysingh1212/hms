@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Admin\AppointmentController;
+
 Route::redirect('/', '/login');
 Route::get('/home', function () {
     if (session('status')) {
@@ -194,6 +196,14 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'namespace' => 'Admin', 'mi
     Route::delete('messenger/{topic}', 'MessengerController@destroyTopic')->name('messenger.destroyTopic');
     Route::post('messenger/{topic}/reply', 'MessengerController@replyToTopic')->name('messenger.reply');
     Route::get('messenger/{topic}/reply', 'MessengerController@showReply')->name('messenger.showReply');
+
+    // custom routes can be placed here
+    Route::get('get-doctors-by-department', [AppointmentController::class, 'getDoctors'])->name('getDoctorsByDepartment');
+
+    Route::get('get-doctor-details', [AppointmentController::class, 'getDoctorDetails'])->name('getDoctorDetails');
+
+    Route::get('get-available-slots', [AppointmentController::class, 'getAvailableSlots'])->name('getAvailableSlots');
+
 });
 Route::group(['prefix' => 'profile', 'as' => 'profile.', 'namespace' => 'Auth', 'middleware' => ['auth']], function () {
     // Change password

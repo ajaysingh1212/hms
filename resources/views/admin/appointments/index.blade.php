@@ -89,10 +89,11 @@
                                 {{ $appointment->doctor->doctor_name ?? '' }}
                             </td>
                             <td>
-                                @if($appointment->doctor)
-                                    {{ $appointment->doctor::AVAILABLE_DAYS_RADIO[$appointment->doctor->available_days] ?? '' }}
+                                @if(is_array($appointment->available_days))
+                                    {{ implode(', ', array_map('ucfirst', $appointment->available_days)) }}
                                 @endif
                             </td>
+
                             <td>
                                 {{ $appointment->doctor->appointment_slot_duration ?? '' }}
                             </td>
@@ -100,8 +101,17 @@
                                 {{ $appointment->doctor->doctor_fee ?? '' }}
                             </td>
                             <td>
-                                {{ $appointment->available_slots->select_time ?? '' }}
+                                @php
+                                    $slots = is_array($appointment->doctor_slots)
+                                        ? $appointment->doctor_slots
+                                        : json_decode($appointment->doctor_slots, true);
+                                @endphp
+
+                                @if(is_array($slots))
+                                    {{ implode(', ', $slots) }}
+                                @endif
                             </td>
+
                             <td>
                                 {{ $appointment->patient_name ?? '' }}
                             </td>

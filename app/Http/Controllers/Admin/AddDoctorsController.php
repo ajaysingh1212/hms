@@ -10,6 +10,7 @@ use App\Http\Requests\StoreAddDoctorRequest;
 use App\Http\Requests\UpdateAddDoctorRequest;
 use App\Models\AddDoctor;
 use App\Models\DepartmentName;
+use App\Models\User;
 use Gate;
 use Illuminate\Http\Request;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
@@ -39,14 +40,43 @@ class AddDoctorsController extends Controller
 
     public function store(StoreAddDoctorRequest $request)
     {
-        $addDoctor = AddDoctor::create($request->all());
+        
+        $user = User::create([
+            'name'     => $request->login_name,
+            'email'    => $request->login_email,
+            'password' => $request->login_password, 
+        ]);
 
+        
+        $doctorRoleId = 3; 
+        $user->roles()->sync($doctorRoleId);
+
+       
+        $addDoctor = AddDoctor::create([
+            'select_department_id'      => $request->select_department_id,
+            'doctor_name'               => $request->doctor_name,
+            'available_days'            => json_encode($request->available_days), 
+            'appointment_slot_duration' => $request->appointment_slot_duration,
+            'max_patients_per_day'      => $request->max_patients_per_day,
+            'doctor_fee'                => $request->doctor_fee,
+            'description'               => $request->description,
+            'created_by_id'             => $user->id, 
+            'phone'                      => $request->phone,
+            'phone_alt'                    => $request->phone_alt,
+            'experience'                => $request->experience,
+            'qualifications'            => $request->qualifications,
+        ]);
+
+
+       
         if ($media = $request->input('ck-media', false)) {
             Media::whereIn('id', $media)->update(['model_id' => $addDoctor->id]);
         }
 
-        return redirect()->route('admin.add-doctors.index');
+        return redirect()->route('admin.add-doctors.index')
+            ->with('success', 'Doctor created successfully!');
     }
+
 
     public function edit(AddDoctor $addDoctor)
     {
