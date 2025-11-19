@@ -10,6 +10,10 @@ use App\Http\Requests\StoreOpdBillingRequest;
 use App\Http\Requests\UpdateOpdBillingRequest;
 use App\Models\OpdBilling;
 use App\Models\OpdVisit;
+use App\Models\OpdPrescription;
+use App\Models\Medicine;
+use App\Models\LabTest;
+use App\Models\OpdTest;
 use Gate;
 use Illuminate\Http\Request;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
@@ -28,11 +32,80 @@ class OpdBillingController extends Controller
         return view('admin.opdBillings.index', compact('opdBillings'));
     }
 
+public function opdDetails(Request $request)
+{
+    $opdId = $request->query('opd_id');
+
+    if (!$opdId) {
+        return response()->json(['error' => 'OPD ID required'], 422);
+    }
+
+    // LOAD EVERYTHING IN ONE QUERY
+    $opd = OpdVisit::with([
+        'doctor',
+        'patient',
+        'opdTests.tests'
+    ])->find($opdId);
+
+    if (!$opd) {
+        return response()->json(['error' => 'OPD not found'], 404);
+    }
+
+    // Doctor Fee
+    $doctor_fee = $opd->doctor ? $opd->doctor->doctor_fee : 0;
+
+    // Latest Prescription
+    $prescription = OpdPrescription::with('medicines')
+        ->where('opd_id', $opdId)
+        ->latest()
+        ->first();
+
+    $medicines = [];
+    $medicine_total = 0;
+
+    if ($prescription) {
+        foreach ($prescription->medicines as $m) {
+            $medicines[] = [
+                'name'  => $m->name,
+                'price' => (float)$m->price,
+            ];
+            $medicine_total += (float)$m->price;
+        }
+    }
+
+    // OPD TESTS
+    $tests = [];
+    $test_total = 0;
+
+    foreach ($opd->opdTests as $testGroup) {
+        foreach ($testGroup->tests as $t) {
+            $tests[] = [
+                'name'  => $t->test_name,
+                'price' => (float)$t->price,
+            ];
+            $test_total += (float)$t->price;
+        }
+    }
+
+    return response()->json([
+        'doctor_fee'      => (float)$doctor_fee,
+        'medicines'       => $medicines,
+        'medicine_total'  => (float)$medicine_total,
+        'tests'           => $tests,
+        'test_total'      => (float)$test_total,
+        'patient'         => $opd->patient ? strip_tags($opd->patient->patient_name) : '',
+        'doctor'          => $opd->doctor ? strip_tags($opd->doctor->doctor_name) : '',
+    ]);
+}
+
+
+
+
     public function create()
     {
         abort_if(Gate::denies('opd_billing_create'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
-        $opds = OpdVisit::pluck('visit_date', 'id')->prepend(trans('global.pleaseSelect'), '');
+        $opds = OpdVisit::pluck('opd_id', 'id')->prepend(trans('global.pleaseSelect'), '');
 
         return view('admin.opdBillings.create', compact('opds'));
     }
@@ -56,7 +129,7 @@ class OpdBillingController extends Controller
     {
         abort_if(Gate::denies('opd_billing_edit'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
-        $opds = OpdVisit::pluck('visit_date', 'id')->prepend(trans('global.pleaseSelect'), '');
+        $opds = OpdVisit::pluck('opd_id', 'id')->prepend(trans('global.pleaseSelect'), '');
 
         $opdBilling->load('opd', 'created_by');
 
@@ -69,48 +142,19 @@ class OpdBillingController extends Controller
 
         if (count($opdBilling->attechment) > 0) {
             foreach ($opdBilling->attechment as $media) {
-                if (! in_array($media->file_name, $request->input('attechment', []))) {
+                if (!in_array($media->file_name, $request->input('attechment', []))) {
                     $media->delete();
                 }
             }
         }
         $media = $opdBilling->attechment->pluck('file_name')->toArray();
         foreach ($request->input('attechment', []) as $file) {
-            if (count($media) === 0 || ! in_array($file, $media)) {
+            if (!in_array($file, $media)) {
                 $opdBilling->addMedia(storage_path('tmp/uploads/' . basename($file)))->toMediaCollection('attechment');
             }
         }
 
         return redirect()->route('admin.opd-billings.index');
-    }
-
-    public function show(OpdBilling $opdBilling)
-    {
-        abort_if(Gate::denies('opd_billing_show'), Response::HTTP_FORBIDDEN, '403 Forbidden');
-
-        $opdBilling->load('opd', 'created_by');
-
-        return view('admin.opdBillings.show', compact('opdBilling'));
-    }
-
-    public function destroy(OpdBilling $opdBilling)
-    {
-        abort_if(Gate::denies('opd_billing_delete'), Response::HTTP_FORBIDDEN, '403 Forbidden');
-
-        $opdBilling->delete();
-
-        return back();
-    }
-
-    public function massDestroy(MassDestroyOpdBillingRequest $request)
-    {
-        $opdBillings = OpdBilling::find(request('ids'));
-
-        foreach ($opdBillings as $opdBilling) {
-            $opdBilling->delete();
-        }
-
-        return response(null, Response::HTTP_NO_CONTENT);
     }
 
     public function storeCKEditorImages(Request $request)
@@ -122,6 +166,6 @@ class OpdBillingController extends Controller
         $model->exists = true;
         $media         = $model->addMediaFromRequest('upload')->toMediaCollection('ck-media');
 
-        return response()->json(['id' => $media->id, 'url' => $media->getUrl()], Response::HTTP_CREATED);
+        return response()->json(['id' => $media->id, 'url' => $media->getUrl()], 201);
     }
 }

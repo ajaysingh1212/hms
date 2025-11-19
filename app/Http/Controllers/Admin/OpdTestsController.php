@@ -11,6 +11,7 @@ use App\Http\Requests\UpdateOpdTestRequest;
 use App\Models\LabTest;
 use App\Models\OpdTest;
 use App\Models\OpdVisit;
+use App\Models\OpdPrescription;
 use Gate;
 use Illuminate\Http\Request;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
@@ -29,11 +30,97 @@ class OpdTestsController extends Controller
         return view('admin.opdTests.index', compact('opdTests'));
     }
 
+    public function opdDetails(Request $request)
+    {
+        $opdId = $request->query('opd_id');
+
+        if (!$opdId) {
+            return response()->json(['error' => 'opd_id required'], 422);
+        }
+
+        $opd = OpdVisit::with(['doctor', 'patient', 'created_by'])->find($opdId);
+
+        if (!$opd) {
+            return response()->json(['error' => 'OPD not found'], 404);
+        }
+
+        // doctor available days array
+        $doctor = $opd->doctor;
+        $doctor_available_days = [];
+        if ($doctor) {
+            $doctor_available_days = is_array($doctor->available_days)
+                ? $doctor->available_days
+                : ( $doctor->available_days ? json_decode($doctor->available_days, true) : [] );
+        }
+
+        // sanitize doctor fields
+        if ($doctor) {
+            $doctor->doctor_name = strip_tags($doctor->doctor_name);
+            $doctor->phone = strip_tags($doctor->phone);
+            $doctor->phone_alt = strip_tags($doctor->phone_alt);
+            $doctor->experience = strip_tags($doctor->experience);
+            $doctor->description = strip_tags($doctor->description);
+        }
+
+        // patient sanitize
+        $patient = $opd->patient;
+        if ($patient) {
+            $patient->patient_name = strip_tags($patient->patient_name);
+            $patient->mobile_number = strip_tags($patient->mobile_number);
+            $patient->reason_for_visit = strip_tags($patient->reason_for_visit);
+            $patient->patient_number = strip_tags($patient->patient_number);
+        }
+
+        // opd sanitize
+        $opd->symptoms = strip_tags($opd->symptoms);
+        $opd->diagnosis = strip_tags($opd->diagnosis);
+        $opd->notes = strip_tags($opd->notes);
+        $opd->visit_type = strip_tags($opd->visit_type);
+        $opd->status = strip_tags($opd->status);
+
+        // Latest prescription for this OPD (if any)
+        $latestPrescription = OpdPrescription::with('medicines')->where('opd_id', $opdId)->latest('created_at')->first();
+        $prescriptionData = null;
+
+        if ($latestPrescription) {
+            // sanitize prescription fields
+            $latestPrescription->dosage = strip_tags($latestPrescription->dosage);
+            $latestPrescription->duration = strip_tags($latestPrescription->duration);
+            $latestPrescription->instructions = strip_tags($latestPrescription->instructions);
+
+            // medicines list with name + price
+            $meds = [];
+            foreach ($latestPrescription->medicines as $m) {
+                $meds[] = [
+                    'id'    => $m->id,
+                    'name'  => strip_tags($m->name),
+                    'price' => $m->price, // you confirmed column is `price`
+                ];
+            }
+
+            $prescriptionData = [
+                'id'         => $latestPrescription->id,
+                'dosage'     => $latestPrescription->dosage,
+                'duration'   => $latestPrescription->duration,
+                'instructions' => $latestPrescription->instructions,
+                'medicines'  => $meds
+            ];
+        }
+
+        return response()->json([
+            'opd'                   => $opd,
+            'doctor'                => $doctor,
+            'doctor_available_days' => $doctor_available_days,
+            'patient'               => $patient,
+            'prescription'          => $prescriptionData,
+        ]);
+    }
+
     public function create()
     {
         abort_if(Gate::denies('opd_test_create'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
-        $opds = OpdVisit::pluck('visit_date', 'id')->prepend(trans('global.pleaseSelect'), '');
+        $opds = OpdVisit::pluck('opd_id', 'id')->prepend(trans('global.pleaseSelect'), '');
 
         $tests = LabTest::pluck('test_name', 'id');
 

@@ -1,101 +1,200 @@
 @extends('layouts.admin')
 @section('content')
 
+<style>
+/* ---------- CUSTOM PROFESSIONAL DESIGN ---------- */
+
+/* 3 Column Form Grid */
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+}
+@media (max-width: 992px) {
+    .form-grid { grid-template-columns: repeat(1, 1fr); }
+}
+
+/* Full width textarea */
+.full-row { width: 100%; }
+
+/* Info Cards */
+.info-area { margin-bottom: 20px; margin-top: 20px; display: flex; gap: 15px; flex-wrap: wrap; }
+
+.info-card {
+    flex: 1 1 calc(33.33% - 15px);
+    background: #fff;
+    padding: 15px;
+    border-radius: 12px;
+    border: 1px solid rgba(0,0,0,0.05);
+    box-shadow: 0 6px 15px rgba(0,0,0,0.06);
+    min-width: 260px;
+}
+.info-card h5 {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 10px;
+    color: #364f6b;
+    border-bottom: 1px solid #f1f1f1;
+    padding-bottom: 6px;
+}
+.info-card .item { font-size: 14px; margin-bottom: 6px; }
+.info-card .label { color: #444; font-weight: 600; }
+
+/* Attachments design */
+.attachment-box {
+    border: 2px dashed #c8d6e5;
+    background: #f8fbff;
+    padding: 15px;
+    border-radius: 10px;
+}
+</style>
+
 <div class="card">
     <div class="card-header">
-        {{ trans('global.create') }} {{ trans('cruds.opdPrescription.title_singular') }}
+        <strong style="font-size:18px;">📝 Create OPD Prescription</strong>
     </div>
 
     <div class="card-body">
-        <form method="POST" action="{{ route("admin.opd-prescriptions.store") }}" enctype="multipart/form-data">
+        <form method="POST" action="{{ route('admin.opd-prescriptions.store') }}" enctype="multipart/form-data">
             @csrf
-            <div class="form-group">
-                <label for="opd_id">{{ trans('cruds.opdPrescription.fields.opd') }}</label>
-                <select class="form-control select2 {{ $errors->has('opd') ? 'is-invalid' : '' }}" name="opd_id" id="opd_id">
-                    @foreach($opds as $id => $entry)
-                        <option value="{{ $id }}" {{ old('opd_id') == $id ? 'selected' : '' }}>{{ $entry }}</option>
-                    @endforeach
-                </select>
-                @if($errors->has('opd'))
-                    <div class="invalid-feedback">
-                        {{ $errors->first('opd') }}
-                    </div>
-                @endif
-                <span class="help-block">{{ trans('cruds.opdPrescription.fields.opd_helper') }}</span>
-            </div>
+
+            {{-- ---------------- FORM GRID ---------------- --}}
+            <div class="form-grid">
+
+                {{-- OPD Select --}}
+                <div class="form-group">
+                    <label for="opd_id">{{ trans('cruds.opdPrescription.fields.opd') }}</label>
+                    <select class="form-control select2 {{ $errors->has('opd') ? 'is-invalid' : '' }}" name="opd_id" id="opd_id">
+                        <option value="">-- Select OPD --</option>
+                        @foreach($opds as $id => $entry)
+                            <option value="{{ $id }}">{{ $entry }}</option>
+                        @endforeach
+                    </select>
+                    @if($errors->has('opd'))
+                        <span class="text-danger">{{ $errors->first('opd') }}</span>
+                    @endif
+                </div>
+
+                {{-- Dosage --}}
+                <div class="form-group">
+                    <label for="dosage">{{ trans('cruds.opdPrescription.fields.dosage') }}</label>
+                    <input class="form-control" type="text" name="dosage" id="dosage">
+                </div>
+
+                {{-- Duration --}}
+                <div class="form-group">
+                    <label for="duration">{{ trans('cruds.opdPrescription.fields.duration') }}</label>
+                    <input class="form-control" type="text" name="duration" id="duration">
+                </div>
+
+            </div> {{-- END GRID --}}
+
+            {{-- MEDICINES --}}
             <div class="form-group">
                 <label for="medicines">{{ trans('cruds.opdPrescription.fields.medicine') }}</label>
-                <div style="padding-bottom: 4px">
-                    <span class="btn btn-info btn-xs select-all" style="border-radius: 0">{{ trans('global.select_all') }}</span>
-                    <span class="btn btn-info btn-xs deselect-all" style="border-radius: 0">{{ trans('global.deselect_all') }}</span>
-                </div>
-                <select class="form-control select2 {{ $errors->has('medicines') ? 'is-invalid' : '' }}" name="medicines[]" id="medicines" multiple>
+                <select class="form-control select2" name="medicines[]" id="medicines" multiple>
                     @foreach($medicines as $id => $medicine)
-                        <option value="{{ $id }}" {{ in_array($id, old('medicines', [])) ? 'selected' : '' }}>{{ $medicine }}</option>
+                        <option value="{{ $id }}">{{ $medicine }}</option>
                     @endforeach
                 </select>
-                @if($errors->has('medicines'))
-                    <div class="invalid-feedback">
-                        {{ $errors->first('medicines') }}
-                    </div>
-                @endif
-                <span class="help-block">{{ trans('cruds.opdPrescription.fields.medicine_helper') }}</span>
             </div>
-            <div class="form-group">
-                <label for="dosage">{{ trans('cruds.opdPrescription.fields.dosage') }}</label>
-                <input class="form-control {{ $errors->has('dosage') ? 'is-invalid' : '' }}" type="text" name="dosage" id="dosage" value="{{ old('dosage', '') }}">
-                @if($errors->has('dosage'))
-                    <div class="invalid-feedback">
-                        {{ $errors->first('dosage') }}
-                    </div>
-                @endif
-                <span class="help-block">{{ trans('cruds.opdPrescription.fields.dosage_helper') }}</span>
-            </div>
-            <div class="form-group">
-                <label for="duration">{{ trans('cruds.opdPrescription.fields.duration') }}</label>
-                <input class="form-control {{ $errors->has('duration') ? 'is-invalid' : '' }}" type="text" name="duration" id="duration" value="{{ old('duration', '') }}">
-                @if($errors->has('duration'))
-                    <div class="invalid-feedback">
-                        {{ $errors->first('duration') }}
-                    </div>
-                @endif
-                <span class="help-block">{{ trans('cruds.opdPrescription.fields.duration_helper') }}</span>
-            </div>
-            <div class="form-group">
+
+            {{-- INSTRUCTIONS - FULL WIDTH --}}
+            <div class="form-group full-row">
                 <label for="instructions">{{ trans('cruds.opdPrescription.fields.instructions') }}</label>
-                <textarea class="form-control ckeditor {{ $errors->has('instructions') ? 'is-invalid' : '' }}" name="instructions" id="instructions">{!! old('instructions') !!}</textarea>
-                @if($errors->has('instructions'))
-                    <div class="invalid-feedback">
-                        {{ $errors->first('instructions') }}
-                    </div>
-                @endif
-                <span class="help-block">{{ trans('cruds.opdPrescription.fields.instructions_helper') }}</span>
+                <textarea class="form-control ckeditor" name="instructions" id="instructions"></textarea>
             </div>
-            <div class="form-group">
-                <label for="attechment">{{ trans('cruds.opdPrescription.fields.attechment') }}</label>
-                <div class="needsclick dropzone {{ $errors->has('attechment') ? 'is-invalid' : '' }}" id="attechment-dropzone">
+
+            {{-- ------------------- INFO CARDS -------------------- --}}
+            <div class="info-area">
+
+                {{-- Doctor Card --}}
+                <div class="info-card" id="doctorCard">
+                    <h5>👨‍⚕️ Doctor Details</h5>
+                    <div class="item"><span class="label">Name:</span> <span id="doc_name">--</span></div>
+                    <div class="item"><span class="label">Phone:</span> <span id="doc_phone">--</span></div>
+                    <div class="item"><span class="label">Experience:</span> <span id="doc_exp">--</span></div>
+                    <div class="item"><span class="label">Available Days:</span> <span id="doc_days">--</span></div>
                 </div>
-                @if($errors->has('attechment'))
-                    <div class="invalid-feedback">
-                        {{ $errors->first('attechment') }}
-                    </div>
-                @endif
-                <span class="help-block">{{ trans('cruds.opdPrescription.fields.attechment_helper') }}</span>
+
+                {{-- Patient Card --}}
+                <div class="info-card" id="patientCard">
+                    <h5>🧑‍💼 Patient Details</h5>
+                    <div class="item"><span class="label">Name:</span> <span id="pat_name">--</span></div>
+                    <div class="item"><span class="label">Mobile:</span> <span id="pat_mobile">--</span></div>
+                    <div class="item"><span class="label">Reason:</span> <span id="pat_reason">--</span></div>
+                    <div class="item"><span class="label">Date:</span> <span id="pat_date">--</span></div>
+                </div>
+
+                {{-- OPD Visit Card --}}
+                <div class="info-card" id="visitCard">
+                    <h5>📄 OPD Visit Details</h5>
+                    <div class="item"><span class="label">Visit Date:</span> <span id="v_date">--</span></div>
+                    <div class="item"><span class="label">Visit Time:</span> <span id="v_time">--</span></div>
+                    <div class="item"><span class="label">Symptoms:</span> <span id="v_symptoms">--</span></div>
+                    <div class="item"><span class="label">Diagnosis:</span> <span id="v_diagnosis">--</span></div>
+                </div>
+
             </div>
+
+            {{-- ------------------- ATTACHMENT -------------------- --}}
             <div class="form-group">
-                <button class="btn btn-danger" type="submit">
-                    {{ trans('global.save') }}
-                </button>
+                <label>{{ trans('cruds.opdPrescription.fields.attechment') }}</label>
+                <div class="attachment-box">
+                    <div class="needsclick dropzone" id="attechment-dropzone"></div>
+                </div>
             </div>
+
+            {{-- SUBMIT BUTTON --}}
+            <button class="btn btn-danger">Save Prescription</button>
+
         </form>
     </div>
 </div>
 
-
-
 @endsection
 
 @section('scripts')
+@parent
+
+<script>
+/* ------------ AJAX LOAD OPD DETAILS ------------- */
+$('#opd_id').change(function() {
+    let opd_id = $(this).val();
+    if (!opd_id) return;
+
+    $.ajax({
+        url: "{{ route('admin.opd-prescriptions.opdDetails') }}",
+        type: "GET",
+        data: { opd_id: opd_id },
+        success: function(res) {
+
+            // Doctor
+            $('#doc_name').text(res.doctor?.doctor_name || '--');
+            $('#doc_phone').text(res.doctor?.phone || '--');
+            $('#doc_exp').text(res.doctor?.experience + " yrs" || '--');
+            $('#doc_days').text(res.doctor_available_days?.join(", ") || '--');
+
+            // Patient
+            $('#pat_name').text(res.patient?.patient_name || '--');
+            $('#pat_mobile').text(res.patient?.mobile_number || '--');
+            $('#pat_reason').text(res.patient?.reason_for_visit || '--');
+            $('#pat_date').text(res.patient?.date || '--');
+
+            // Visit
+            $('#v_date').text(res.opd?.visit_date || '--');
+            $('#v_time').text(res.opd?.visit_time || '--');
+            $('#v_symptoms').text(res.opd?.symptoms || '--');
+            $('#v_diagnosis').text(res.opd?.diagnosis || '--');
+        }
+    });
+});
+</script>
+
+
+
+
+
 <script>
     $(document).ready(function () {
   function SimpleUploadAdapter(editor) {

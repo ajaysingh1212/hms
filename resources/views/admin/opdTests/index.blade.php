@@ -53,7 +53,7 @@
                                 {{ $opdTest->id ?? '' }}
                             </td>
                             <td>
-                                {{ $opdTest->opd->visit_date ?? '' }}
+                                {{ $opdTest->opd->opd_id ?? '' }}
                             </td>
                             <td>
                                 @if($opdTest->opd)

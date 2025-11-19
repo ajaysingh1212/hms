@@ -74,7 +74,7 @@
                                 {{ $opdBilling->id ?? '' }}
                             </td>
                             <td>
-                                {{ $opdBilling->opd->visit_date ?? '' }}
+                                {{ $opdBilling->opd->opd_id ?? '' }}
                             </td>
                             <td>
                                 {{ $opdBilling->opd->visit_time ?? '' }}

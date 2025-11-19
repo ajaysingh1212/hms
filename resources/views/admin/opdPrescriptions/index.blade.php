@@ -68,7 +68,7 @@
                                 {{ $opdPrescription->id ?? '' }}
                             </td>
                             <td>
-                                {{ $opdPrescription->opd->visit_date ?? '' }}
+                                {{ $opdPrescription->opd->opd_id ?? '' }}
                             </td>
                             <td>
                                 {{ $opdPrescription->opd->visit_time ?? '' }}

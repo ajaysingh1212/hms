@@ -28,10 +28,10 @@ class LabTest extends Model implements HasMedia
         'test_name',
         'price',
         'description',
+        'created_by_id',
         'created_at',
         'updated_at',
         'deleted_at',
-        'created_by_id',
     ];
 
     protected function serializeDate(DateTimeInterface $date)
@@ -45,9 +45,15 @@ class LabTest extends Model implements HasMedia
         $this->addMediaConversion('preview')->fit('crop', 120, 120);
     }
 
-    public function testOpdTests()
+    /** 🔥 FIXED MANY-TO-MANY RELATION */
+    public function opdTests()
     {
-        return $this->belongsToMany(OpdTest::class);
+        return $this->belongsToMany(
+            OpdTest::class,
+            'lab_test_opd_test',   // pivot table
+            'lab_test_id',         // FK on pivot for LabTest
+            'opd_test_id'          // FK on pivot for OpdTest
+        );
     }
 
     public function created_by()

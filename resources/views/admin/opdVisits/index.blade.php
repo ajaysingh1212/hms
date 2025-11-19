@@ -30,6 +30,9 @@
                             {{ trans('cruds.opdVisit.fields.id') }}
                         </th>
                         <th>
+                            OPD NO.
+                        </th>
+                        <th>
                             {{ trans('cruds.opdVisit.fields.patient') }}
                         </th>
                         <th>
@@ -77,6 +80,9 @@
                                 {{ $opdVisit->id ?? '' }}
                             </td>
                             <td>
+                                {{ $opdVisit->opd_id ?? '' }}
+                            </td>
+                            <td>
                                 {{ $opdVisit->patient->patient_number ?? '' }}
                             </td>
                             <td>
@@ -89,10 +95,9 @@
                                 {{ $opdVisit->doctor->doctor_name ?? '' }}
                             </td>
                             <td>
-                                @if($opdVisit->doctor)
-                                    {{ $opdVisit->doctor::AVAILABLE_DAYS_RADIO[$opdVisit->doctor->available_days] ?? '' }}
-                                @endif
+                                {{ implode(', ', json_decode($opdVisit->doctor->available_days ?? '[]')) }}
                             </td>
+
                             <td>
                                 {{ $opdVisit->doctor->doctor_fee ?? '' }}
                             </td>

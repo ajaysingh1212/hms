@@ -55,6 +55,7 @@ class OpdVisit extends Model implements HasMedia
         'updated_at',
         'deleted_at',
         'created_by_id',
+        'opd_id',
     ];
 
     protected function serializeDate(DateTimeInterface $date)
@@ -97,4 +98,10 @@ class OpdVisit extends Model implements HasMedia
     {
         return $this->belongsTo(User::class, 'created_by_id');
     }
+public function opdTests()
+{
+    return $this->hasMany(OpdTest::class, 'opd_id', 'id');
+}
+
+
 }

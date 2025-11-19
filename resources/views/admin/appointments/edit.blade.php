@@ -1,212 +1,291 @@
 @extends('layouts.admin')
+
+@section('styles')
+<style>
+.appointment-wrapper {background:#f4f8ff;padding:25px;border-radius:15px;}
+.doctor-card {display:block;background:#fff;padding:25px;border-radius:16px;border-left:6px solid #007bff;box-shadow:0 4px 20px rgba(0,0,0,.08);margin-bottom:20px;}
+.doctor-title {font-size:22px;font-weight:700;color:#003366;}
+.day-box,.info-slot {display:inline-flex;align-items:center;padding:6px 10px;margin:4px;border-radius:8px;border:1px solid #b7d7ff;background:#eaf4ff;color:#0056b3;gap:8px;}
+.info-slot {background:#e8f7ff;border-color:#007bff;color:#007bff;}
+.section-title {font-size:18px;font-weight:600;color:#002147;margin:15px 0 5px 0;}
+.slot-box {padding:10px 14px;border-radius:8px;margin:5px;display:inline-block;cursor:pointer;transition:.2s;}
+.slot-available {background:#d4f8d4;color:#0a730a;border:1px solid #0a730a;}
+.slot-booked {background:#ffd3d3;color:#b10000;border:1px solid #b10000;opacity:.9;}
+.selected-slot {border:2px solid #000;}
+.form-control{border-radius:10px;}
+.btn-submit{background:linear-gradient(90deg,#007bff,#0063d6);border:none;padding:12px 25px;font-size:18px;border-radius:10px;}
+.small-note{font-size:11px;margin-left:6px;color:#7a5200;}
+</style>
+@endsection
+
+
 @section('content')
 
-<div class="card">
-    <div class="card-header">
-        {{ trans('global.edit') }} {{ trans('cruds.appointment.title_singular') }}
-    </div>
+<div class="appointment-wrapper">
+    <div class="card shadow-lg border-0">
+        <div class="card-header bg-primary text-white">
+            <strong><i class="fa fa-calendar-check"></i> Edit Appointment</strong>
+        </div>
 
-    <div class="card-body">
-        <form method="POST" action="{{ route("admin.appointments.update", [$appointment->id]) }}" enctype="multipart/form-data">
-            @method('PUT')
-            @csrf
-            <div class="form-group">
-                <label for="patient_number">{{ trans('cruds.appointment.fields.patient_number') }}</label>
-                <input class="form-control {{ $errors->has('patient_number') ? 'is-invalid' : '' }}" type="text" name="patient_number" id="patient_number" value="{{ old('patient_number', $appointment->patient_number) }}">
-                @if($errors->has('patient_number'))
-                    <div class="invalid-feedback">
-                        {{ $errors->first('patient_number') }}
+        <div class="card-body">
+            <form method="POST" action="{{ route('admin.appointments.update', $appointment->id) }}" id="appointmentForm">
+                @csrf
+                @method('PUT')
+
+                <div class="row">
+                    <div class="col-md-4">
+                        <label>Patient Number</label>
+                        <input type="text" class="form-control" value="{{ $appointment->patient_number }}" readonly>
                     </div>
-                @endif
-                <span class="help-block">{{ trans('cruds.appointment.fields.patient_number_helper') }}</span>
-            </div>
-            <div class="form-group">
-                <label class="required" for="department_id">{{ trans('cruds.appointment.fields.department') }}</label>
-                <select class="form-control select2 {{ $errors->has('department') ? 'is-invalid' : '' }}" name="department_id" id="department_id" required>
-                    @foreach($departments as $id => $entry)
-                        <option value="{{ $id }}" {{ (old('department_id') ? old('department_id') : $appointment->department->id ?? '') == $id ? 'selected' : '' }}>{{ $entry }}</option>
-                    @endforeach
-                </select>
-                @if($errors->has('department'))
-                    <div class="invalid-feedback">
-                        {{ $errors->first('department') }}
+
+                    <div class="col-md-4">
+                        <label>Department</label>
+                        <select id="department_id" name="department_id" class="form-control select2" required>
+                            @foreach($departments as $id => $name)
+                                <option value="{{ $id }}" {{ $appointment->department_id == $id ? 'selected' : '' }}>
+                                    {{ $name }}
+                                </option>
+                            @endforeach
+                        </select>
                     </div>
-                @endif
-                <span class="help-block">{{ trans('cruds.appointment.fields.department_helper') }}</span>
-            </div>
-            <div class="form-group">
-                <label class="required" for="doctor_id">{{ trans('cruds.appointment.fields.doctor') }}</label>
-                <select class="form-control select2 {{ $errors->has('doctor') ? 'is-invalid' : '' }}" name="doctor_id" id="doctor_id" required>
-                    @foreach($doctors as $id => $entry)
-                        <option value="{{ $id }}" {{ (old('doctor_id') ? old('doctor_id') : $appointment->doctor->id ?? '') == $id ? 'selected' : '' }}>{{ $entry }}</option>
-                    @endforeach
-                </select>
-                @if($errors->has('doctor'))
-                    <div class="invalid-feedback">
-                        {{ $errors->first('doctor') }}
+
+                    <div class="col-md-4">
+                        <label>Select Doctor</label>
+                        <select id="doctor_id" name="doctor_id" class="form-control select2" required></select>
                     </div>
-                @endif
-                <span class="help-block">{{ trans('cruds.appointment.fields.doctor_helper') }}</span>
-            </div>
-            <div class="form-group">
-                <label for="available_slots_id">{{ trans('cruds.appointment.fields.available_slots') }}</label>
-                <select class="form-control select2 {{ $errors->has('available_slots') ? 'is-invalid' : '' }}" name="available_slots_id" id="available_slots_id">
-                    @foreach($available_slots as $id => $entry)
-                        <option value="{{ $id }}" {{ (old('available_slots_id') ? old('available_slots_id') : $appointment->available_slots->id ?? '') == $id ? 'selected' : '' }}>{{ $entry }}</option>
-                    @endforeach
-                </select>
-                @if($errors->has('available_slots'))
-                    <div class="invalid-feedback">
-                        {{ $errors->first('available_slots') }}
+                </div>
+
+
+                <!-- Doctor Card -->
+                <div class="doctor-card" id="doctorCard">
+                    <h5 id="d_name" class="doctor-title alert alert-info">Loading...</h5>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><b>Experience:</b> <span id="d_exp"></span> years</p>
+                            <p><b>Phone:</b> <span id="d_phone"></span></p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><b>Qualifications:</b> <span id="d_qual"></span></p>
+                            <p><b>Fee:</b> ₹ <span id="d_fee"></span></p>
+                        </div>
                     </div>
-                @endif
-                <span class="help-block">{{ trans('cruds.appointment.fields.available_slots_helper') }}</span>
-            </div>
-            <div class="form-group">
-                <label class="required" for="patient_name">{{ trans('cruds.appointment.fields.patient_name') }}</label>
-                <input class="form-control {{ $errors->has('patient_name') ? 'is-invalid' : '' }}" type="text" name="patient_name" id="patient_name" value="{{ old('patient_name', $appointment->patient_name) }}" required>
-                @if($errors->has('patient_name'))
-                    <div class="invalid-feedback">
-                        {{ $errors->first('patient_name') }}
+
+                    <p class="section-title">Available Days</p>
+                    <div id="d_days"></div>
+
+                    <p class="section-title">Doctor Slots</p>
+                    <div id="d_slots"></div>
+                </div>
+
+
+
+                <div class="row mt-4">
+                    <div class="col-md-4">
+                        <label>Patient Name</label>
+                        <input type="text" name="patient_name" class="form-control" value="{{ $appointment->patient_name }}" required>
                     </div>
-                @endif
-                <span class="help-block">{{ trans('cruds.appointment.fields.patient_name_helper') }}</span>
-            </div>
-            <div class="form-group">
-                <label class="required" for="mobile_number">{{ trans('cruds.appointment.fields.mobile_number') }}</label>
-                <input class="form-control {{ $errors->has('mobile_number') ? 'is-invalid' : '' }}" type="text" name="mobile_number" id="mobile_number" value="{{ old('mobile_number', $appointment->mobile_number) }}" required>
-                @if($errors->has('mobile_number'))
-                    <div class="invalid-feedback">
-                        {{ $errors->first('mobile_number') }}
+
+                    <div class="col-md-4">
+                        <label>Mobile Number</label>
+                        <input type="text" name="mobile_number" class="form-control" value="{{ $appointment->mobile_number }}" required>
                     </div>
-                @endif
-                <span class="help-block">{{ trans('cruds.appointment.fields.mobile_number_helper') }}</span>
-            </div>
-            <div class="form-group">
-                <label class="required" for="date">{{ trans('cruds.appointment.fields.date') }}</label>
-                <input class="form-control date {{ $errors->has('date') ? 'is-invalid' : '' }}" type="text" name="date" id="date" value="{{ old('date', $appointment->date) }}" required>
-                @if($errors->has('date'))
-                    <div class="invalid-feedback">
-                        {{ $errors->first('date') }}
+
+                    <div class="col-md-4">
+                        <label>Date</label>
+                        <input type="text" id="date" name="date"
+                               value="{{ $appointment->date }}"
+                               class="form-control date" readonly required>
                     </div>
-                @endif
-                <span class="help-block">{{ trans('cruds.appointment.fields.date_helper') }}</span>
-            </div>
-            <div class="form-group">
-                <label for="reason_for_visit">{{ trans('cruds.appointment.fields.reason_for_visit') }}</label>
-                <textarea class="form-control ckeditor {{ $errors->has('reason_for_visit') ? 'is-invalid' : '' }}" name="reason_for_visit" id="reason_for_visit">{!! old('reason_for_visit', $appointment->reason_for_visit) !!}</textarea>
-                @if($errors->has('reason_for_visit'))
-                    <div class="invalid-feedback">
-                        {{ $errors->first('reason_for_visit') }}
+                </div>
+
+
+                <div id="slotSection" class="mt-3">
+                    <p class="section-title">Available Time Slots</p>
+                    <div id="slotsContainer"></div>
+                </div>
+
+
+                <div class="row mt-4">
+                    <div class="col-md-6">
+                        <label>Appointment Type</label>
+                        <select name="appointment_type" class="form-control select2">
+                            @foreach(\App\Models\Appointment::APPOINTMENT_TYPE_SELECT as $id => $label)
+                                <option value="{{ $id }}" {{ $appointment->appointment_type == $id ? 'selected' : '' }}>{{ $label }}</option>
+                            @endforeach
+                        </select>
                     </div>
-                @endif
-                <span class="help-block">{{ trans('cruds.appointment.fields.reason_for_visit_helper') }}</span>
-            </div>
-            <div class="form-group">
-                <label>{{ trans('cruds.appointment.fields.appointment_type') }}</label>
-                <select class="form-control {{ $errors->has('appointment_type') ? 'is-invalid' : '' }}" name="appointment_type" id="appointment_type">
-                    <option value disabled {{ old('appointment_type', null) === null ? 'selected' : '' }}>{{ trans('global.pleaseSelect') }}</option>
-                    @foreach(App\Models\Appointment::APPOINTMENT_TYPE_SELECT as $key => $label)
-                        <option value="{{ $key }}" {{ old('appointment_type', $appointment->appointment_type) === (string) $key ? 'selected' : '' }}>{{ $label }}</option>
-                    @endforeach
-                </select>
-                @if($errors->has('appointment_type'))
-                    <div class="invalid-feedback">
-                        {{ $errors->first('appointment_type') }}
+
+                    <div class="col-md-6">
+                        <label>Status</label>
+                        <select name="status" class="form-control select2">
+                            @foreach(\App\Models\Appointment::STATUS_SELECT as $id => $label)
+                                <option value="{{ $id }}" {{ $appointment->status == $id ? 'selected' : '' }}>{{ $label }}</option>
+                            @endforeach
+                        </select>
                     </div>
-                @endif
-                <span class="help-block">{{ trans('cruds.appointment.fields.appointment_type_helper') }}</span>
-            </div>
-            <div class="form-group">
-                <label>{{ trans('cruds.appointment.fields.status') }}</label>
-                <select class="form-control {{ $errors->has('status') ? 'is-invalid' : '' }}" name="status" id="status">
-                    <option value disabled {{ old('status', null) === null ? 'selected' : '' }}>{{ trans('global.pleaseSelect') }}</option>
-                    @foreach(App\Models\Appointment::STATUS_SELECT as $key => $label)
-                        <option value="{{ $key }}" {{ old('status', $appointment->status) === (string) $key ? 'selected' : '' }}>{{ $label }}</option>
-                    @endforeach
-                </select>
-                @if($errors->has('status'))
-                    <div class="invalid-feedback">
-                        {{ $errors->first('status') }}
-                    </div>
-                @endif
-                <span class="help-block">{{ trans('cruds.appointment.fields.status_helper') }}</span>
-            </div>
-            <div class="form-group">
-                <button class="btn btn-danger" type="submit">
-                    {{ trans('global.save') }}
-                </button>
-            </div>
-        </form>
+                </div>
+
+
+                <label class="mt-4">Description</label>
+                <textarea name="description" class="form-control ckeditor">{!! $appointment->description !!}</textarea>
+
+                <label class="mt-3">Reason For Visit</label>
+                <textarea name="reason_for_visit" class="form-control ckeditor">{!! $appointment->reason_for_visit !!}</textarea>
+
+
+                <input type="hidden" id="available_days_json" name="available_days">
+                <input type="hidden" id="doctor_slots_json" name="doctor_slots" value="{{ json_encode($appointment->doctor_slots) }}">
+                <input type="hidden" id="slot_id" name="available_slots_id" value="{{ $appointment->available_slots_id }}">
+
+
+                <div class="text-center mt-4">
+                    <button class="btn btn-submit text-white">Update Appointment</button>
+                </div>
+
+            </form>
+        </div>
     </div>
 </div>
 
-
-
 @endsection
+
 
 @section('scripts')
 <script>
-    $(document).ready(function () {
-  function SimpleUploadAdapter(editor) {
-    editor.plugins.get('FileRepository').createUploadAdapter = function(loader) {
-      return {
-        upload: function() {
-          return loader.file
-            .then(function (file) {
-              return new Promise(function(resolve, reject) {
-                // Init request
-                var xhr = new XMLHttpRequest();
-                xhr.open('POST', '{{ route('admin.appointments.storeCKEditorImages') }}', true);
-                xhr.setRequestHeader('x-csrf-token', window._token);
-                xhr.setRequestHeader('Accept', 'application/json');
-                xhr.responseType = 'json';
+$(document).ready(function(){
 
-                // Init listeners
-                var genericErrorText = `Couldn't upload file: ${ file.name }.`;
-                xhr.addEventListener('error', function() { reject(genericErrorText) });
-                xhr.addEventListener('abort', function() { reject() });
-                xhr.addEventListener('load', function() {
-                  var response = xhr.response;
+    let selectedDoctor = "{{ $appointment->doctor_id }}";
+    let selectedSlotId = "{{ $appointment->available_slots_id }}";
 
-                  if (!response || xhr.status !== 201) {
-                    return reject(response && response.message ? `${genericErrorText}\n${xhr.status} ${response.message}` : `${genericErrorText}\n ${xhr.status} ${xhr.statusText}`);
-                  }
+    // Load doctors for department
+    function loadDoctors(dept){
+        $.get("{{ route('admin.getDoctorsByDepartment') }}",{department_id:dept},function(res){
 
-                  $('form').append('<input type="hidden" name="ck-media[]" value="' + response.id + '">');
+            $('#doctor_id').html('<option value="">Select Doctor</option>');
 
-                  resolve({ default: response.url });
-                });
+            $.each(res,function(id,name){
+                $('#doctor_id').append(
+                    `<option value="${id}" ${id==selectedDoctor?'selected':''}>${name}</option>`
+                );
+            });
 
-                if (xhr.upload) {
-                  xhr.upload.addEventListener('progress', function(e) {
-                    if (e.lengthComputable) {
-                      loader.uploadTotal = e.total;
-                      loader.uploaded = e.loaded;
-                    }
-                  });
-                }
-
-                // Send request
-                var data = new FormData();
-                data.append('upload', file);
-                data.append('crud_id', '{{ $appointment->id ?? 0 }}');
-                xhr.send(data);
-              });
-            })
-        }
-      };
+            loadDoctorDetails(selectedDoctor);
+        });
     }
-  }
 
-  var allEditors = document.querySelectorAll('.ckeditor');
-  for (var i = 0; i < allEditors.length; ++i) {
-    ClassicEditor.create(
-      allEditors[i], {
-        extraPlugins: [SimpleUploadAdapter]
-      }
-    );
-  }
+    loadDoctors($("#department_id").val());
+
+    $("#department_id").change(function(){
+        loadDoctors($(this).val());
+    });
+
+
+    // Load doctor details
+    function loadDoctorDetails(id){
+
+        $.get("{{ route('admin.getDoctorDetails') }}",{doctor_id:id},function(doc){
+
+            $("#d_name").text(doc.doctor_name);
+            $("#d_exp").text(doc.experience);
+            $("#d_phone").text(doc.phone);
+            $("#d_qual").text(doc.qualifications);
+            $("#d_fee").text(doc.doctor_fee);
+
+            // Days
+            $("#d_days").html('');
+            doc.available_days.forEach(d=>{
+                $("#d_days").append(`
+                    <label class="day-box">
+                        <input type="checkbox" checked disabled>
+                        ${d.toUpperCase()}
+                    </label>
+                `);
+            });
+
+            // Doctor Slot detail card
+            $("#d_slots").html('');
+            doc.slots.forEach(s=>{
+
+                let isBooked = s.booked_today;
+
+                if(isBooked){
+                    $("#d_slots").append(`
+                        <label class="info-slot" style="background:#ffd3d3;border-color:#b10000;color:#b10000;">
+                            <input type="checkbox" disabled>
+                            ${s.select_time} <b>(Booked Today)</b>
+                        </label>
+                    `);
+                }
+                else{
+                    $("#d_slots").append(`
+                        <label class="info-slot">
+                            <input type="checkbox" disabled>
+                            ${s.select_time}
+                        </label>
+                    `);
+                }
+            });
+
+
+            // AUTO FILL DATE BASED ON DOCTOR DETAILS
+            $("#date").val(doc.selected_appointment_date);
+
+            loadAvailableSlots(id, doc.selected_appointment_date);
+
+        });
+
+    }
+
+    $("#doctor_id").change(function(){
+        selectedDoctor = $(this).val();
+        loadDoctorDetails(selectedDoctor);
+    });
+
+
+    // Load available slots
+    function loadAvailableSlots(doctor_id,date){
+
+        $.get("{{ route('admin.getAvailableSlots') }}",{doctor_id,date},function(res){
+
+            $("#slotsContainer").html('');
+
+            res.available.forEach(s=>{
+
+                let active = (s.id == selectedSlotId) ? "selected-slot" : "";
+
+                $("#slotsContainer").append(`
+                    <span class="slot-box slot-available ${active}" data-id="${s.id}">
+                        ${s.select_time}
+                    </span>
+                `);
+            });
+
+            res.booked.forEach(s=>{
+                $("#slotsContainer").append(`
+                    <span class="slot-box slot-booked">${s.select_time}</span>
+                `);
+            });
+
+        });
+    }
+
+    $(document).on('click','.slot-available',function(){
+        $(".slot-available").removeClass("selected-slot");
+        $(this).addClass("selected-slot");
+        $("#slot_id").val($(this).data("id"));
+    });
+
+});
+</script>
+
+
+<script>
+// CKEditor initialize
+document.addEventListener("DOMContentLoaded",function(){
+    document.querySelectorAll(".ckeditor").forEach(el=>{
+        ClassicEditor.create(el).catch(err=>console.error(err));
+    });
 });
 </script>
 

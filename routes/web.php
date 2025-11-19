@@ -76,6 +76,8 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'namespace' => 'Admin', 'mi
     Route::resource('opd-visits', 'OpdVisitsController');
 
     // Opd Prescriptions
+    Route::get('opd-prescriptions/opd-detail', [App\Http\Controllers\Admin\OpdPrescriptionsController::class, 'opdDetails'])
+        ->name('opd-prescriptions.opdDetails');
     Route::delete('opd-prescriptions/destroy', 'OpdPrescriptionsController@massDestroy')->name('opd-prescriptions.massDestroy');
     Route::post('opd-prescriptions/media', 'OpdPrescriptionsController@storeMedia')->name('opd-prescriptions.storeMedia');
     Route::post('opd-prescriptions/ckmedia', 'OpdPrescriptionsController@storeCKEditorImages')->name('opd-prescriptions.storeCKEditorImages');
@@ -92,6 +94,8 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'namespace' => 'Admin', 'mi
     Route::resource('lab-tests', 'LabTestController');
 
     // Opd Tests
+    Route::get('opd-tests/opd-details', [App\Http\Controllers\Admin\OpdTestsController::class, 'opdDetails'])
+        ->name('opd-tests.opdDetails');
     Route::delete('opd-tests/destroy', 'OpdTestsController@massDestroy')->name('opd-tests.massDestroy');
     Route::post('opd-tests/media', 'OpdTestsController@storeMedia')->name('opd-tests.storeMedia');
     Route::post('opd-tests/ckmedia', 'OpdTestsController@storeCKEditorImages')->name('opd-tests.storeCKEditorImages');
@@ -100,6 +104,10 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'namespace' => 'Admin', 'mi
     Route::resource('opd-tests', 'OpdTestsController');
 
     // Opd Billing
+    Route::get('opd-billings/opd-details', 
+    [App\Http\Controllers\Admin\OpdBillingController::class, 'opdDetails']
+    )->name('opd-billings.opdDetails');
+
     Route::delete('opd-billings/destroy', 'OpdBillingController@massDestroy')->name('opd-billings.massDestroy');
     Route::post('opd-billings/media', 'OpdBillingController@storeMedia')->name('opd-billings.storeMedia');
     Route::post('opd-billings/ckmedia', 'OpdBillingController@storeCKEditorImages')->name('opd-billings.storeCKEditorImages');
@@ -203,6 +211,11 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'namespace' => 'Admin', 'mi
     Route::get('get-doctor-details', [AppointmentController::class, 'getDoctorDetails'])->name('getDoctorDetails');
 
     Route::get('get-available-slots', [AppointmentController::class, 'getAvailableSlots'])->name('getAvailableSlots');
+    // Appointment details used by AJAX when selecting "patient" (i.e. an appointment record)
+    Route::get('opd-visits/appointment-details/{appointment}', [App\Http\Controllers\Admin\OpdVisitsController::class, 'appointmentDetails'])
+        ->name('opd-visits.appointmentDetails');
+    // AJAX endpoint to fetch OPD details
+
 
 });
 Route::group(['prefix' => 'profile', 'as' => 'profile.', 'namespace' => 'Auth', 'middleware' => ['auth']], function () {

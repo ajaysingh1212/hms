@@ -27,10 +27,10 @@ class OpdTest extends Model implements HasMedia
     protected $fillable = [
         'opd_id',
         'notes',
+        'created_by_id',
         'created_at',
         'updated_at',
         'deleted_at',
-        'created_by_id',
     ];
 
     protected function serializeDate(DateTimeInterface $date)
@@ -49,9 +49,15 @@ class OpdTest extends Model implements HasMedia
         return $this->belongsTo(OpdVisit::class, 'opd_id');
     }
 
+    /** 🔥 FIXED MANY-TO-MANY RELATION */
     public function tests()
     {
-        return $this->belongsToMany(LabTest::class);
+        return $this->belongsToMany(
+            LabTest::class,
+            'lab_test_opd_test',   // pivot table
+            'opd_test_id',         // FK on pivot for OpdTest
+            'lab_test_id'          // FK on pivot for LabTest
+        );
     }
 
     public function created_by()
