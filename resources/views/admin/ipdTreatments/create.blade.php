@@ -1,205 +1,320 @@
 @extends('layouts.admin')
 @section('content')
 
-<div class="card">
+<style>
+.card-creative{
+    border-radius:12px;
+    overflow:hidden;
+    box-shadow:0 5px 20px rgba(0,0,0,0.08);
+    border:0;
+}
+.card-creative .card-header{
+    background:linear-gradient(90deg,#1f8ef1,#6f42c1);
+    color:#fff;
+    font-weight:600;
+}
+.section-title{
+    background:#f1f3f5;
+    padding:6px 12px;
+    border-left:4px solid #1f8ef1;
+    font-weight:600;
+    margin-bottom:8px;
+}
+.info-label{font-weight:600;}
+.info-text{color:#495057;}
+.big-label{font-size:18px;font-weight:600;}
+.pill{
+    background:#eef2ff;
+    padding:3px 10px;
+    border-radius:20px;
+    font-size:12px;
+    margin-right:4px;
+    display:inline-block;
+}
+.upload-card{
+    border:2px dashed #ced4da;
+    padding:15px;
+    border-radius:12px;
+    background:linear-gradient(180deg,#fff,#f8f9fa);
+}
+</style>
+
+<div class="card card-creative">
     <div class="card-header">
-        {{ trans('global.create') }} {{ trans('cruds.ipdTreatment.title_singular') }}
+        <i class="fas fa-notes-medical mr-2"></i>
+        Create IPD Treatment
     </div>
 
     <div class="card-body">
-        <form method="POST" action="{{ route("admin.ipd-treatments.store") }}" enctype="multipart/form-data">
-            @csrf
-            <div class="form-group">
-                <label for="ipd_id">{{ trans('cruds.ipdTreatment.fields.ipd') }}</label>
-                <select class="form-control select2 {{ $errors->has('ipd') ? 'is-invalid' : '' }}" name="ipd_id" id="ipd_id">
-                    @foreach($ipds as $id => $entry)
-                        <option value="{{ $id }}" {{ old('ipd_id') == $id ? 'selected' : '' }}>{{ $entry }}</option>
-                    @endforeach
-                </select>
-                @if($errors->has('ipd'))
-                    <div class="invalid-feedback">
-                        {{ $errors->first('ipd') }}
-                    </div>
-                @endif
-                <span class="help-block">{{ trans('cruds.ipdTreatment.fields.ipd_helper') }}</span>
-            </div>
-            <div class="form-group">
-                <label for="date">{{ trans('cruds.ipdTreatment.fields.date') }}</label>
-                <input class="form-control date {{ $errors->has('date') ? 'is-invalid' : '' }}" type="text" name="date" id="date" value="{{ old('date') }}">
-                @if($errors->has('date'))
-                    <div class="invalid-feedback">
-                        {{ $errors->first('date') }}
-                    </div>
-                @endif
-                <span class="help-block">{{ trans('cruds.ipdTreatment.fields.date_helper') }}</span>
-            </div>
-            <div class="form-group">
-                <label for="doctor_notes">{{ trans('cruds.ipdTreatment.fields.doctor_notes') }}</label>
-                <textarea class="form-control ckeditor {{ $errors->has('doctor_notes') ? 'is-invalid' : '' }}" name="doctor_notes" id="doctor_notes">{!! old('doctor_notes') !!}</textarea>
-                @if($errors->has('doctor_notes'))
-                    <div class="invalid-feedback">
-                        {{ $errors->first('doctor_notes') }}
-                    </div>
-                @endif
-                <span class="help-block">{{ trans('cruds.ipdTreatment.fields.doctor_notes_helper') }}</span>
-            </div>
-            <div class="form-group">
-                <label for="diagnosis">{{ trans('cruds.ipdTreatment.fields.diagnosis') }}</label>
-                <textarea class="form-control ckeditor {{ $errors->has('diagnosis') ? 'is-invalid' : '' }}" name="diagnosis" id="diagnosis">{!! old('diagnosis') !!}</textarea>
-                @if($errors->has('diagnosis'))
-                    <div class="invalid-feedback">
-                        {{ $errors->first('diagnosis') }}
-                    </div>
-                @endif
-                <span class="help-block">{{ trans('cruds.ipdTreatment.fields.diagnosis_helper') }}</span>
-            </div>
-            <div class="form-group">
-                <label for="treatment">{{ trans('cruds.ipdTreatment.fields.treatment') }}</label>
-                <textarea class="form-control ckeditor {{ $errors->has('treatment') ? 'is-invalid' : '' }}" name="treatment" id="treatment">{!! old('treatment') !!}</textarea>
-                @if($errors->has('treatment'))
-                    <div class="invalid-feedback">
-                        {{ $errors->first('treatment') }}
-                    </div>
-                @endif
-                <span class="help-block">{{ trans('cruds.ipdTreatment.fields.treatment_helper') }}</span>
-            </div>
-            <div class="form-group">
-                <label for="attechment">{{ trans('cruds.ipdTreatment.fields.attechment') }}</label>
-                <div class="needsclick dropzone {{ $errors->has('attechment') ? 'is-invalid' : '' }}" id="attechment-dropzone">
-                </div>
-                @if($errors->has('attechment'))
-                    <div class="invalid-feedback">
-                        {{ $errors->first('attechment') }}
-                    </div>
-                @endif
-                <span class="help-block">{{ trans('cruds.ipdTreatment.fields.attechment_helper') }}</span>
-            </div>
-            <div class="form-group">
-                <button class="btn btn-danger" type="submit">
-                    {{ trans('global.save') }}
-                </button>
-            </div>
-        </form>
+
+<form method="POST" action="{{ route('admin.ipd-treatments.store') }}" enctype="multipart/form-data" id="treatment-form">
+@csrf
+
+{{-- ================== SELECT IPD ================== --}}
+<div class="row mb-3">
+    <div class="col-lg-4">
+        <label class="required">Select IPD Admission</label>
+        <select class="form-control select2" name="ipd_id" id="ipd_id" required>
+            <option value="">Select IPD</option>
+            @foreach($ipds as $id=>$entry)
+                <option value="{{ $id }}">{{ $entry }}</option>
+            @endforeach
+        </select>
+    </div>
+
+    <div class="col-lg-4">
+        <label class="required">Treatment Date</label>
+        <input type="text" name="date" id="date" class="form-control date" required>
     </div>
 </div>
 
+{{-- ================== AUTO DETAILS ================== --}}
+<div id="details-section" style="display:none;">
 
+    <h5 class="section-title">Auto Fetched IPD Details</h5>
+
+    <div class="row">
+
+        {{-- IPD DETAILS --}}
+        <div class="col-lg-6">
+            <div class="card card-creative mb-3">
+                <div class="card-header">IPD Admission Details</div>
+                <div class="card-body">
+                    <div><span class="info-label">IPD Number:</span> <span id="ipd_no"></span></div>
+                    <div><span class="info-label">Admit Date:</span> <span id="ipd_date"></span></div>
+                    <div><span class="info-label">Admit Time:</span> <span id="ipd_time"></span></div>
+                    <div><span class="info-label">Status:</span> <span id="ipd_status"></span></div>
+                </div>
+            </div>
+        </div>
+
+        {{-- PATIENT --}}
+        <div class="col-lg-6">
+            <div class="card card-creative mb-3">
+                <div class="card-header">Patient Details</div>
+                <div class="card-body">
+                    <div><span class="info-label">Patient:</span> <span id="p_name"></span></div>
+                    <div><span class="info-label">Mobile:</span> <span id="p_mobile"></span></div>
+                    <div><span class="info-label">Reason:</span> <span id="p_reason"></span></div>
+                    <div><span class="info-label">Department:</span> <span id="p_dep"></span></div>
+                </div>
+            </div>
+        </div>
+
+        {{-- DOCTOR --}}
+        <div class="col-lg-6">
+            <div class="card card-creative mb-3">
+                <div class="card-header">Doctor Details</div>
+                <div class="card-body">
+                    <div class="big-label" id="d_name"></div>
+                    <div><strong>Department:</strong> <span id="d_dep"></span></div>
+                    <div><strong>Fee:</strong> ₹<span id="d_fee"></span></div>
+                    <div><strong>Experience:</strong> <span id="d_exp"></span> yrs</div>
+                    <div><strong>Qualifications:</strong> <span id="d_qual"></span></div>
+                    <div><strong>Phone:</strong> <span id="d_phone"></span></div>
+                    <div class="mt-2"><strong>Available Days:</strong> <span id="d_days"></span></div>
+                </div>
+            </div>
+        </div>
+
+        {{-- ROOM & BEDS --}}
+        <div class="col-lg-6">
+            <div class="card card-creative mb-3">
+                <div class="card-header">Room & Beds</div>
+                <div class="card-body">
+                    <div><span class="info-label">Room No:</span> <span id="r_no"></span></div>
+                    <div><span class="info-label">Ward:</span> <span id="r_ward"></span></div>
+                    <div><span class="info-label">Charges:</span> ₹<span id="r_charge"></span></div>
+
+                    <h6 class="mt-3">Bed Details</h6>
+                    <table class="table table-sm table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Bed</th>
+                                <th>Charge</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="bed_list"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+{{-- ================== TREATMENT ================== --}}
+<h5 class="section-title mt-4">Doctor Notes & Treatment</h5>
+
+<div class="row">
+    <div class="col-lg-6">
+        <label>Doctor Notes</label>
+        <textarea name="doctor_notes" class="form-control ckeditor"></textarea>
+    </div>
+    <div class="col-lg-6">
+        <label>Diagnosis</label>
+        <textarea name="diagnosis" class="form-control ckeditor"></textarea>
+    </div>
+</div>
+
+<div class="row mt-3">
+    <div class="col-lg-12">
+        <label>Treatment</label>
+        <textarea name="treatment" class="form-control ckeditor"></textarea>
+    </div>
+</div>
+
+{{-- ================== ATTACHMENT ================== --}}
+<div class="mt-4">
+    <label>Attachments</label>
+    <div class="upload-card">
+        <div class="d-flex align-items-center">
+            <div style="font-size:30px;margin-right:8px;color:#1f8ef1">
+                <i class="fas fa-cloud-upload-alt"></i>
+            </div>
+            <div>
+                <strong>Upload Files</strong><br>
+                <small class="text-muted">Multiple attachments allowed</small>
+            </div>
+        </div>
+
+        <div class="needsclick dropzone mt-3" id="attechment-dropzone"></div>
+    </div>
+</div>
+
+<div class="text-right mt-4">
+    <button class="btn btn-primary">
+        <i class="fas fa-save mr-1"></i> Save Treatment
+    </button>
+</div>
+
+</form>
+
+</div>
+</div>
 
 @endsection
 
 @section('scripts')
 <script>
-    $(document).ready(function () {
-  function SimpleUploadAdapter(editor) {
-    editor.plugins.get('FileRepository').createUploadAdapter = function(loader) {
-      return {
-        upload: function() {
-          return loader.file
-            .then(function (file) {
-              return new Promise(function(resolve, reject) {
-                // Init request
-                var xhr = new XMLHttpRequest();
-                xhr.open('POST', '{{ route('admin.ipd-treatments.storeCKEditorImages') }}', true);
-                xhr.setRequestHeader('x-csrf-token', window._token);
-                xhr.setRequestHeader('Accept', 'application/json');
-                xhr.responseType = 'json';
 
-                // Init listeners
-                var genericErrorText = `Couldn't upload file: ${ file.name }.`;
-                xhr.addEventListener('error', function() { reject(genericErrorText) });
-                xhr.addEventListener('abort', function() { reject() });
-                xhr.addEventListener('load', function() {
-                  var response = xhr.response;
+/* ------------ CKEDITOR UPLOAD ------------- */
+function SimpleUploadAdapter(editor){
+    editor.plugins.get('FileRepository').createUploadAdapter = function(loader){
+        return{
+            upload:()=>{
+                return loader.file.then(file=>{
+                    return new Promise((resolve,reject)=>{
+                        var xhr=new XMLHttpRequest();
+                        xhr.open('POST',"{{ route('admin.ipd-treatments.storeCKEditorImages') }}");
+                        xhr.setRequestHeader('x-csrf-token',window._token);
+                        xhr.responseType='json';
 
-                  if (!response || xhr.status !== 201) {
-                    return reject(response && response.message ? `${genericErrorText}\n${xhr.status} ${response.message}` : `${genericErrorText}\n ${xhr.status} ${xhr.statusText}`);
-                  }
+                        xhr.onload=function(){
+                            if(xhr.status!==201){ reject("Upload failed"); return; }
+                            $('form').append('<input type="hidden" name="ck-media[]" value="'+xhr.response.id+'">');
+                            resolve({default:xhr.response.url});
+                        };
 
-                  $('form').append('<input type="hidden" name="ck-media[]" value="' + response.id + '">');
-
-                  resolve({ default: response.url });
+                        var data=new FormData();
+                        data.append('upload',file);
+                        xhr.send(data);
+                    });
                 });
-
-                if (xhr.upload) {
-                  xhr.upload.addEventListener('progress', function(e) {
-                    if (e.lengthComputable) {
-                      loader.uploadTotal = e.total;
-                      loader.uploaded = e.loaded;
-                    }
-                  });
-                }
-
-                // Send request
-                var data = new FormData();
-                data.append('upload', file);
-                data.append('crud_id', '{{ $ipdTreatment->id ?? 0 }}');
-                xhr.send(data);
-              });
-            })
-        }
-      };
-    }
-  }
-
-  var allEditors = document.querySelectorAll('.ckeditor');
-  for (var i = 0; i < allEditors.length; ++i) {
-    ClassicEditor.create(
-      allEditors[i], {
-        extraPlugins: [SimpleUploadAdapter]
-      }
-    );
-  }
-});
-</script>
-
-<script>
-    Dropzone.options.attechmentDropzone = {
-    url: '{{ route('admin.ipd-treatments.storeMedia') }}',
-    maxFilesize: 20, // MB
-    maxFiles: 1,
-    addRemoveLinks: true,
-    headers: {
-      'X-CSRF-TOKEN': "{{ csrf_token() }}"
-    },
-    params: {
-      size: 20
-    },
-    success: function (file, response) {
-      $('form').find('input[name="attechment"]').remove()
-      $('form').append('<input type="hidden" name="attechment" value="' + response.name + '">')
-    },
-    removedfile: function (file) {
-      file.previewElement.remove()
-      if (file.status !== 'error') {
-        $('form').find('input[name="attechment"]').remove()
-        this.options.maxFiles = this.options.maxFiles + 1
-      }
-    },
-    init: function () {
-@if(isset($ipdTreatment) && $ipdTreatment->attechment)
-      var file = {!! json_encode($ipdTreatment->attechment) !!}
-          this.options.addedfile.call(this, file)
-      file.previewElement.classList.add('dz-complete')
-      $('form').append('<input type="hidden" name="attechment" value="' + file.file_name + '">')
-      this.options.maxFiles = this.options.maxFiles - 1
-@endif
-    },
-     error: function (file, response) {
-         if ($.type(response) === 'string') {
-             var message = response //dropzone sends it's own error messages in string
-         } else {
-             var message = response.errors.file
-         }
-         file.previewElement.classList.add('dz-error')
-         _ref = file.previewElement.querySelectorAll('[data-dz-errormessage]')
-         _results = []
-         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-             node = _ref[_i]
-             _results.push(node.textContent = message)
-         }
-
-         return _results
-     }
+            }
+        };
+    };
 }
+
+document.querySelectorAll('.ckeditor').forEach(el=>{
+    ClassicEditor.create(el,{ extraPlugins:[SimpleUploadAdapter] });
+});
+
+/* ------------ FETCH ALL IPD DETAILS ------------- */
+
+$('#ipd_id').change(function () {
+
+    let ipd = $(this).val();
+    if (!ipd) return;
+
+    $.ajax({
+        url: "{{ route('admin.ipd-treatments.getIpdDetails') }}",
+        data: { ipd_id: ipd },
+        success: function (res) {
+
+            $('#details-section').show();
+
+            /* ========== IPD DETAILS ========== */
+            let a = res.ipd;
+            $('#ipd_no').text(a.ipd_number ?? '-');
+            $('#ipd_date').text(a.admission_date ?? '-');
+            $('#ipd_time').text(a.admission_time ?? '-');
+            $('#ipd_status').text(a.status ?? '-');
+
+            /* ========== PATIENT ========== */
+            let p = res.patient;
+            $('#p_name').text(p.patient_name ?? '-');
+            $('#p_mobile').text(p.mobile_number ?? '-');
+            $('#p_reason').text(p.reason_for_visit ?? '-');
+            $('#p_dep').text(p.department_name ?? '-');
+
+            /* ========== DOCTOR ========== */
+            let d = res.doctor;
+            $('#d_name').text(d.doctor_name ?? '-');
+            $('#d_dep').text(d.doctor_department ?? '-');
+            $('#d_fee').text(d.doctor_fee ?? '-');
+            $('#d_exp').text(d.experience ?? '-');
+            $('#d_qual').text(d.qualifications ?? '-');
+            $('#d_phone').text(d.phone ?? '-');
+
+            let daysHtml = "";
+            (d.available_days || []).forEach(day => {
+                daysHtml += `<span class="pill">${day}</span>`;
+            });
+            $('#d_days').html(daysHtml);
+
+            /* ========== ROOM ========== */
+            let r = res.room;
+            $('#r_no').text(r.room_no ?? '-');
+            $('#r_ward').text(r.ward_type ?? '-');
+            $('#r_charge').text(r.charges_per_day ?? '-');
+
+            /* ========== BEDS LIST ========== */
+            let bedHTML = "";
+            res.beds.forEach(b => {
+                bedHTML += `
+                    <tr>
+                        <td>${b.bed_no}</td>
+                        <td>₹${b.charges_per_day}</td>
+                        <td>${b.status}</td>
+                    </tr>
+                `;
+            });
+
+            $('#bed_list').html(bedHTML);
+        }
+    });
+
+});
+
+
+/* ------------ DROPZONE MULTIPLE UPLOAD ------------- */
+Dropzone.options.attechmentDropzone={
+    url:"{{ route('admin.ipd-treatments.storeMedia') }}",
+    maxFilesize:20,
+    maxFiles:10,
+    addRemoveLinks:true,
+    headers:{'X-CSRF-TOKEN':"{{ csrf_token() }}"},
+    success:function(file,res){
+        $('form').append('<input type="hidden" name="attechment[]" value="'+res.name+'">');
+        file._serverName=res.name;
+    },
+    removedfile:function(file){
+        file.previewElement.remove();
+        $('form').find('input[value="'+file._serverName+'"]').remove();
+    }
+};
+
 </script>
 @endsection

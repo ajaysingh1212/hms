@@ -23,6 +23,82 @@
                 @endif
                 <span class="help-block">{{ trans('cruds.ipdDischargeSummary.fields.ipd_helper') }}</span>
             </div>
+            <!-- IPD BILLING SUMMARY CARD -->
+            <div id="full-summary-card" style="display:none;" class="glass-card p-4 mt-4">
+
+              <h3><b>📘 IPD Billing Summary</b></h3>
+              <hr>
+
+              <div class="row">
+
+                  <!-- Patient -->
+                  <div class="col-md-4">
+                      <h5 class="text-primary">👤 Patient</h5>
+                      <p><b>Name:</b> <span id="s_p_name"></span></p>
+                      <p><b>Mobile:</b> <span id="s_p_mobile"></span></p>
+                      <p><b>Admission Date:</b> <span id="s_admission"></span></p>
+                      <p><b>Days:</b> <span id="s_days"></span></p>
+                  </div>
+
+                  <!-- Doctor -->
+                  <div class="col-md-4">
+                      <h5 class="text-success">🩺 Doctor</h5>
+                      <p><b>Name:</b> <span id="s_doc_name"></span></p>
+                      <p><b>Department:</b> <span id="s_doc_dept"></span></p>
+                      <p><b>Doctor Fee:</b> ₹<span id="s_doc_fee"></span></p>
+                      <p><b>Total Doctor Charge:</b> ₹<span id="s_doc_total"></span></p>
+                  </div>
+
+                  <!-- Charges -->
+                  <div class="col-md-4">
+                      <h5 class="text-warning">💰 Charges</h5>
+                      <p><b>Bed Charges:</b> ₹<span id="s_bed"></span></p>
+                      <p><b>Medicine Total:</b> ₹<span id="s_med_total"></span></p>
+                      <p><b>Test Total:</b> ₹<span id="s_test_total"></span></p>
+                      <hr>
+                      <p><b>Total Billed:</b> ₹<span id="s_total_billed"></span></p>
+                      <p><b>Total Paid:</b> ₹<span id="s_total_paid"></span></p>
+                      <p><b>Total Due:</b> <span id="s_total_due" class="text-danger"></span></p>
+                  </div>
+
+              </div>
+
+              <hr>
+
+              <!-- Medicine Table -->
+              <div>
+                  <h5>💊 Medicines Used</h5>
+                  <table class="table table-bordered">
+                      <thead><tr><th>Name</th><th>Price</th></tr></thead>
+                      <tbody id="medicine-table"></tbody>
+                  </table>
+              </div>
+
+              <!-- Test Table -->
+              <div class="mt-3">
+                  <h5>🧪 Tests Performed</h5>
+                  <table class="table table-bordered">
+                      <thead><tr><th>Name</th><th>Price</th></tr></thead>
+                      <tbody id="test-table"></tbody>
+                  </table>
+              </div>
+
+              <!-- Payment History -->
+              <div class="mt-3">
+                  <h5>💳 Payment History</h5>
+                  <table class="table table-bordered">
+                      <thead><tr>
+                          <th>Date</th><th>Total</th><th>Paid</th><th>Due</th><th>Mode</th>
+                      </tr></thead>
+                      <tbody id="payment-table"></tbody>
+                  </table>
+              </div>
+
+              <div id="warning-box"></div>
+
+          </div>
+
+
             <div class="form-group">
                 <label for="discharge_date">{{ trans('cruds.ipdDischargeSummary.fields.discharge_date') }}</label>
                 <input class="form-control date {{ $errors->has('discharge_date') ? 'is-invalid' : '' }}" type="text" name="discharge_date" id="discharge_date" value="{{ old('discharge_date') }}">
@@ -99,6 +175,88 @@
 
 @section('scripts')
 <script>
+  $('#ipd_id').change(function(){
+
+    let id = $(this).val();
+    if(!id) return;
+
+    $.ajax({
+        url: "{{ route('admin.ipd-discharge.fullSummary') }}",
+        data: { ipd_id: id },
+        success: function(r){
+
+            $('#full-summary-card').show();
+
+            // Patient
+            $('#s_p_name').text(r.ipd.patient.patient_name);
+            $('#s_p_mobile').text(r.ipd.patient.mobile_number);
+            $('#s_admission').text(r.ipd.admission_date);
+            $('#s_days').text(r.days);
+
+            // Doctor
+            $('#s_doc_name').text(r.ipd.doctor.doctor_name);
+            $('#s_doc_dept').text(r.ipd.doctor.select_department?.department_name);
+            $('#s_doc_fee').text(r.ipd.doctor.doctor_fee);
+            $('#s_doc_total').text(r.doctor_charge);
+
+            // Charges
+            $('#s_bed').text(r.bed_charge);
+            $('#s_med_total').text(r.medicine_total);
+            $('#s_test_total').text(r.test_total);
+
+            $('#s_total_billed').text(r.total_billed);
+            $('#s_total_paid').text(r.total_paid);
+            $('#s_total_due').text(r.total_due);
+
+            // Medicines
+            let medHtml = '';
+            r.medicine_list.forEach(m => {
+                medHtml += `<tr><td>${m.name}</td><td>${m.price}</td></tr>`;
+            });
+            $('#medicine-table').html(medHtml);
+
+            // Tests
+            let testHtml = '';
+            r.test_list.forEach(t => {
+                testHtml += `<tr><td>${t.name}</td><td>${t.price}</td></tr>`;
+            });
+            $('#test-table').html(testHtml);
+
+            // Payments
+            let payHtml = '';
+            r.billing_history.forEach(b => {
+                payHtml += `<tr>
+                    <td>${b.created_at}</td>
+                    <td>${b.total}</td>
+                    <td>${b.paid}</td>
+                    <td>${b.due}</td>
+                    <td>${b.payment_type}</td>
+                </tr>`;
+            });
+            $('#payment-table').html(payHtml);
+
+            // Due Check
+            if(r.total_due > 0){
+                $('#warning-box').html(`
+                    <div class="alert alert-danger mt-3">
+                        ⚠ Due Amount: ₹${r.total_due}<br>
+                        Until dues are cleared, discharge is NOT allowed.
+                    </div>
+                `);
+                $('button[type=submit]').prop('disabled', true);
+            } else {
+                $('#warning-box').html(`
+                    <div class="alert alert-success mt-3">
+                        ✔ All dues cleared. Discharge allowed.
+                    </div>
+                `);
+                $('button[type=submit]').prop('disabled', false);
+            }
+        }
+    });
+});
+
+
     $(document).ready(function () {
   function SimpleUploadAdapter(editor) {
     editor.plugins.get('FileRepository').createUploadAdapter = function(loader) {

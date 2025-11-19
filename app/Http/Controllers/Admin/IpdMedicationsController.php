@@ -13,6 +13,7 @@ use App\Models\IpdMedication;
 use App\Models\Medicine;
 use Gate;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -27,6 +28,87 @@ class IpdMedicationsController extends Controller
         $ipdMedications = IpdMedication::with(['ipd', 'medicines', 'created_by', 'media'])->get();
 
         return view('admin.ipdMedications.index', compact('ipdMedications'));
+    }
+
+    public function getIpdDetails(Request $request)
+    {
+        $ipd_id = $request->ipd_id;
+
+        $ipd = DB::table('ipd_admissions')->where('id', $ipd_id)->first();
+        if (!$ipd) {
+            return response()->json(['error' => true]);
+        }
+
+        $patient = DB::table('appointments')
+            ->leftJoin('department_names', 'appointments.department_id', '=', 'department_names.id')
+            ->select(
+                'appointments.patient_name',
+                'appointments.mobile_number',
+                'appointments.reason_for_visit',
+                'department_names.name as department_name'
+            )
+            ->where('appointments.id', $ipd->patient_id)
+            ->first();
+
+        $doctor = DB::table('add_doctors')
+            ->leftJoin('department_names', 'add_doctors.select_department_id', '=', 'department_names.id')
+            ->select(
+                'add_doctors.doctor_name',
+                'add_doctors.doctor_fee',
+                'add_doctors.experience',
+                'add_doctors.qualifications',
+                'add_doctors.phone',
+                'add_doctors.available_days',
+                'department_names.name as doctor_department'
+            )
+            ->where('add_doctors.id', $ipd->doctor_id)
+            ->first();
+
+        if ($doctor && $doctor->available_days) {
+            $doctor->available_days = json_decode($doctor->available_days, true);
+        } else {
+            $doctor->available_days = [];
+        }
+
+        $room = DB::table('ipd_rooms')
+            ->select('room_no', 'ward_type')
+            ->where('id', $ipd->room_id)
+            ->first();
+
+        $bed = DB::table('ipd_beds')
+            ->select('bed_no', 'charges_per_day')
+            ->where('id', $ipd->bed_id)
+            ->first();
+
+        $treatment = DB::table('ipd_treatments')
+            ->select('date', 'doctor_notes', 'diagnosis', 'treatment', 'id')
+            ->where('ipd_id', $ipd_id)
+            ->orderBy('id', 'DESC')
+            ->first();
+
+        if ($treatment) {
+            $treatment->attachments = DB::table('media')
+                ->where('model_id', $treatment->id)
+                ->where('model_type', 'App\\Models\\IpdTreatment')
+                ->pluck('file_name');
+        } else {
+            $treatment = (object)[
+                'date' => null,
+                'doctor_notes' => null,
+                'diagnosis' => null,
+                'treatment' => null,
+                'attachments' => []
+            ];
+        }
+
+        return response()->json([
+            'ipd'       => $ipd,
+            'patient'   => $patient,
+            'doctor'    => $doctor,
+            'room'      => $room,
+            'bed'       => $bed,
+            'treatment' => $treatment
+        ]);
     }
 
     public function create()

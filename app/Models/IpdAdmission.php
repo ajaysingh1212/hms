@@ -104,6 +104,7 @@ class IpdAdmission extends Model implements HasMedia
         return $this->belongsTo(IpdRoom::class, 'room_id');
     }
 
+
     public function bed()
     {
         return $this->belongsTo(IpdBed::class, 'bed_id');
@@ -118,4 +119,9 @@ class IpdAdmission extends Model implements HasMedia
     {
         return $this->belongsTo(User::class, 'created_by_id');
     }
+    public function department()
+    {
+        return $this->belongsTo(DepartmentName::class, 'department_id');
+    }
+
 }

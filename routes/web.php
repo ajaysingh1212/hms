@@ -1,6 +1,10 @@
 <?php
 
 use App\Http\Controllers\Admin\AppointmentController;
+use App\Http\Controllers\Admin\IpdAdmissionsController;
+use App\Http\Controllers\Admin\IpdBillingController;
+use App\Http\Controllers\Admin\IpdDischargeSummaryController;
+use App\Http\Controllers\Admin\IpdMedicationsController;
 
 Route::redirect('/', '/login');
 Route::get('/home', function () {
@@ -116,6 +120,7 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'namespace' => 'Admin', 'mi
     Route::resource('opd-billings', 'OpdBillingController');
 
     // Ipd Rooms
+    
     Route::delete('ipd-rooms/destroy', 'IpdRoomsController@massDestroy')->name('ipd-rooms.massDestroy');
     Route::post('ipd-rooms/media', 'IpdRoomsController@storeMedia')->name('ipd-rooms.storeMedia');
     Route::post('ipd-rooms/ckmedia', 'IpdRoomsController@storeCKEditorImages')->name('ipd-rooms.storeCKEditorImages');
@@ -132,6 +137,9 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'namespace' => 'Admin', 'mi
     Route::resource('ipd-beds', 'IpdBedsController');
 
     // Ipd Admissions
+    Route::get('ipd-admissions/get-room-details', [IpdAdmissionsController::class, 'getRoomDetails'])->name('ipd-admissions.getRoomDetails');
+    Route::get('ipd-admissions/get-appointment-details', [IpdAdmissionsController::class, 'getAppointmentDetails'])->name('ipd-admissions.getAppointmentDetails');
+
     Route::delete('ipd-admissions/destroy', 'IpdAdmissionsController@massDestroy')->name('ipd-admissions.massDestroy');
     Route::post('ipd-admissions/media', 'IpdAdmissionsController@storeMedia')->name('ipd-admissions.storeMedia');
     Route::post('ipd-admissions/ckmedia', 'IpdAdmissionsController@storeCKEditorImages')->name('ipd-admissions.storeCKEditorImages');
@@ -140,6 +148,8 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'namespace' => 'Admin', 'mi
     Route::resource('ipd-admissions', 'IpdAdmissionsController');
 
     // Ipd Treatments
+    Route::get('ipd-treatments/get-ipd-details', [App\Http\Controllers\Admin\IpdTreatmentsController::class, 'getIpdDetails'])
+    ->name('ipd-treatments.getIpdDetails');
     Route::delete('ipd-treatments/destroy', 'IpdTreatmentsController@massDestroy')->name('ipd-treatments.massDestroy');
     Route::post('ipd-treatments/media', 'IpdTreatmentsController@storeMedia')->name('ipd-treatments.storeMedia');
     Route::post('ipd-treatments/ckmedia', 'IpdTreatmentsController@storeCKEditorImages')->name('ipd-treatments.storeCKEditorImages');
@@ -148,6 +158,9 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'namespace' => 'Admin', 'mi
     Route::resource('ipd-treatments', 'IpdTreatmentsController');
 
     // Ipd Medications
+    Route::get('ipd-medications/get-ipd-details', [IpdMedicationsController::class, 'getIpdDetails'])
+    ->name('ipd-medications.getIpdDetails');
+
     Route::delete('ipd-medications/destroy', 'IpdMedicationsController@massDestroy')->name('ipd-medications.massDestroy');
     Route::post('ipd-medications/media', 'IpdMedicationsController@storeMedia')->name('ipd-medications.storeMedia');
     Route::post('ipd-medications/ckmedia', 'IpdMedicationsController@storeCKEditorImages')->name('ipd-medications.storeCKEditorImages');
@@ -156,6 +169,11 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'namespace' => 'Admin', 'mi
     Route::resource('ipd-medications', 'IpdMedicationsController');
 
     // Ipd Vitals
+    // routes/web.php additions
+    Route::get('admin/ipd-vitals/ipd-details', [App\Http\Controllers\Admin\IpdVitalsController::class, 'getIpdFullDetails'])->name('ipd-vitals.getIpdFullDetails');
+    Route::get('ipd-billings/get-past-payments', [IpdBillingController  ::class, 'getPastPayments'])
+    ->name('ipd-billings.getPastPayments');
+
     Route::delete('ipd-vitals/destroy', 'IpdVitalsController@massDestroy')->name('ipd-vitals.massDestroy');
     Route::post('ipd-vitals/media', 'IpdVitalsController@storeMedia')->name('ipd-vitals.storeMedia');
     Route::post('ipd-vitals/ckmedia', 'IpdVitalsController@storeCKEditorImages')->name('ipd-vitals.storeCKEditorImages');
@@ -164,6 +182,9 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'namespace' => 'Admin', 'mi
     Route::resource('ipd-vitals', 'IpdVitalsController');
 
     // Ipd Test
+    // routes/web.php
+    Route::get('ipd-tests/ipd-details', [App\Http\Controllers\Admin\IpdTestController::class, 'getIpdFullDetails'])->name('ipd-tests.getIpdFullDetails');
+
     Route::delete('ipd-tests/destroy', 'IpdTestController@massDestroy')->name('ipd-tests.massDestroy');
     Route::post('ipd-tests/media', 'IpdTestController@storeMedia')->name('ipd-tests.storeMedia');
     Route::post('ipd-tests/ckmedia', 'IpdTestController@storeCKEditorImages')->name('ipd-tests.storeCKEditorImages');
@@ -172,6 +193,7 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'namespace' => 'Admin', 'mi
     Route::resource('ipd-tests', 'IpdTestController');
 
     // Ipd Billing
+    Route::get('ipd-billings/get-billing-details', [App\Http\Controllers\Admin\IpdBillingController::class, 'getBillingDetails'])->name('ipd-billings.getBillingDetails');
     Route::delete('ipd-billings/destroy', 'IpdBillingController@massDestroy')->name('ipd-billings.massDestroy');
     Route::post('ipd-billings/media', 'IpdBillingController@storeMedia')->name('ipd-billings.storeMedia');
     Route::post('ipd-billings/ckmedia', 'IpdBillingController@storeCKEditorImages')->name('ipd-billings.storeCKEditorImages');
@@ -188,6 +210,10 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'namespace' => 'Admin', 'mi
     Route::resource('medicines', 'MedicineController');
 
     // Ipd Discharge Summary
+    Route::get('ipd-discharge/full-summary', [IpdDischargeSummaryController::class, 'getFullSummary'])
+        ->name('ipd-discharge.fullSummary');
+
+
     Route::delete('ipd-discharge-summaries/destroy', 'IpdDischargeSummaryController@massDestroy')->name('ipd-discharge-summaries.massDestroy');
     Route::post('ipd-discharge-summaries/media', 'IpdDischargeSummaryController@storeMedia')->name('ipd-discharge-summaries.storeMedia');
     Route::post('ipd-discharge-summaries/ckmedia', 'IpdDischargeSummaryController@storeCKEditorImages')->name('ipd-discharge-summaries.storeCKEditorImages');

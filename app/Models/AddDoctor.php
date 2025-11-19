@@ -77,4 +77,5 @@ class AddDoctor extends Model implements HasMedia
     {
         return $this->belongsTo(User::class, 'created_by_id');
     }
+
 }

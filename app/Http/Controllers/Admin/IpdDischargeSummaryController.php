@@ -9,9 +9,13 @@ use App\Http\Requests\MassDestroyIpdDischargeSummaryRequest;
 use App\Http\Requests\StoreIpdDischargeSummaryRequest;
 use App\Http\Requests\UpdateIpdDischargeSummaryRequest;
 use App\Models\IpdAdmission;
+use App\Models\IpdBilling;
 use App\Models\IpdDischargeSummary;
+use App\Models\IpdMedication;
+use App\Models\IpdTest;
 use Gate;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -27,6 +31,95 @@ class IpdDischargeSummaryController extends Controller
 
         return view('admin.ipdDischargeSummaries.index', compact('ipdDischargeSummaries'));
     }
+public function getFullSummary(Request $request)
+{
+    $ipdId = $request->ipd_id;
+
+    $ipd = IpdAdmission::with([
+        'patient',
+        'doctor',
+        'bed.room'
+    ])->findOrFail($ipdId);
+
+    /* ------------------------------
+        1. DOCTOR FEE × DAYS
+    --------------------------------*/
+    $days = now()->diffInDays($ipd->admission_date) + 1;
+    $doctorFee = $ipd->doctor->doctor_fee ?? 0;
+    $doctorCharge = $doctorFee * $days;
+
+    /* ------------------------------
+        2. BED CHARGES × DAYS
+    --------------------------------*/
+    $bedCharge = ($ipd->bed->charges_per_day ?? 0) * $days;
+
+    /* ------------------------------
+        3. MEDICINE CHARGES (all medicines)
+    --------------------------------*/
+    $medications = IpdMedication::with('medicines')
+        ->where('ipd_id', $ipdId)->get();
+
+    $medicineList = [];
+    $medicineTotal = 0;
+
+    foreach ($medications as $m) {
+        foreach ($m->medicines as $med) {
+            $medicineList[] = [
+                'name' => $med->name,
+                'price' => $med->price,
+            ];
+            $medicineTotal += $med->price;
+        }
+    }
+
+    /* ------------------------------
+        4. TEST CHARGES
+    --------------------------------*/
+    $tests = IpdTest::with('tests')
+        ->where('ipd_id', $ipdId)->get();
+
+    $testList = [];
+    $testTotal = 0;
+
+    foreach ($tests as $t) {
+        foreach ($t->tests as $single) {
+            $testList[] = [
+                'name' => $single->test_name,
+                'price' => $single->price,
+            ];
+            $testTotal += $single->price;
+        }
+    }
+
+    /* ------------------------------
+        5. ALL IPD BILLING RECORDS
+    --------------------------------*/
+    $billing = IpdBilling::where('ipd_id', $ipdId)->get();
+
+    $totalBilled = $billing->sum('total');
+    $totalPaid   = $billing->sum('paid');
+    $totalDue    = $totalBilled - $totalPaid;
+
+    return response()->json([
+        'ipd' => $ipd,
+        'days' => $days,
+
+        'doctor_charge' => $doctorCharge,
+        'bed_charge'    => $bedCharge,
+
+        'medicine_list' => $medicineList,
+        'medicine_total' => $medicineTotal,
+
+        'test_list' => $testList,
+        'test_total' => $testTotal,
+
+        'billing_history' => $billing,
+        'total_billed' => $totalBilled,
+        'total_paid' => $totalPaid,
+        'total_due' => $totalDue,
+    ]);
+}
+
 
     public function create()
     {

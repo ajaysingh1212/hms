@@ -10,8 +10,10 @@ use App\Http\Requests\StoreIpdVitalRequest;
 use App\Http\Requests\UpdateIpdVitalRequest;
 use App\Models\IpdAdmission;
 use App\Models\IpdVital;
+use App\Models\IpdMedication;
 use Gate;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -26,6 +28,91 @@ class IpdVitalsController extends Controller
         $ipdVitals = IpdVital::with(['ipd', 'created_by', 'media'])->get();
 
         return view('admin.ipdVitals.index', compact('ipdVitals'));
+    }
+
+    public function getIpdFullDetails(Request $request)
+    {
+        $ipd_id = $request->ipd_id;
+
+        $ipd = DB::table('ipd_admissions')->where('id', $ipd_id)->first();
+        if (!$ipd) {
+            return response()->json(['error' => true]);
+        }
+
+        $patient = DB::table('appointments')
+            ->leftJoin('department_names', 'appointments.department_id', '=', 'department_names.id')
+            ->select(
+                'appointments.patient_name',
+                'appointments.mobile_number',
+                'appointments.reason_for_visit',
+                'department_names.name as department_name'
+            )
+            ->where('appointments.id', $ipd->patient_id)
+            ->first();
+
+        $doctor = DB::table('add_doctors')
+            ->leftJoin('department_names', 'add_doctors.select_department_id', '=', 'department_names.id')
+            ->select(
+                'add_doctors.doctor_name',
+                'add_doctors.doctor_fee',
+                'add_doctors.experience',
+                'add_doctors.qualifications',
+                'add_doctors.phone',
+                'add_doctors.available_days',
+                'department_names.name as doctor_department'
+            )
+            ->where('add_doctors.id', $ipd->doctor_id)
+            ->first();
+
+        if ($doctor && $doctor->available_days) {
+            $doctor->available_days = json_decode($doctor->available_days, true);
+        } else {
+            $doctor->available_days = [];
+        }
+
+        $latestMedication = IpdMedication::where('ipd_id', $ipd_id)->with('medicines')->orderBy('id', 'DESC')->first();
+
+        if ($latestMedication) {
+            $meds = $latestMedication->medicines->map(function($m){
+                return ['id' => $m->id, 'name' => $m->name];
+            })->toArray();
+            $attachments = DB::table('media')->where('model_id', $latestMedication->id)->where('model_type', 'App\\Models\\IpdMedication')->pluck('file_name');
+            $medication = [
+                'id' => $latestMedication->id,
+                'medicines' => $meds,
+                'dosage' => $latestMedication->dosage,
+                'frequency' => $latestMedication->frequency,
+                'route' => $latestMedication->route,
+                'route_label' => isset(IpdMedication::ROUTE_SELECT[$latestMedication->route]) ? IpdMedication::ROUTE_SELECT[$latestMedication->route] : $latestMedication->route,
+                'notes' => $latestMedication->notes,
+                'attachments' => $attachments,
+                'created_at' => $latestMedication->created_at,
+            ];
+        } else {
+            $medication = [
+                'id' => null,
+                'medicines' => [],
+                'dosage' => null,
+                'frequency' => null,
+                'route' => null,
+                'route_label' => null,
+                'notes' => null,
+                'attachments' => [],
+                'created_at' => null,
+            ];
+        }
+
+        $room = DB::table('ipd_rooms')->select('room_no', 'ward_type')->where('id', $ipd->room_id)->first();
+        $bed = DB::table('ipd_beds')->select('bed_no', 'charges_per_day')->where('id', $ipd->bed_id)->first();
+
+        return response()->json([
+            'ipd' => $ipd,
+            'patient' => $patient,
+            'doctor' => $doctor,
+            'room' => $room,
+            'bed' => $bed,
+            'medication' => $medication
+        ]);
     }
 
     public function create()
